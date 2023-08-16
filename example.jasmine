@@ -1,0 +1,11 @@
+let thing: int = 32;
+
+struct Example {
+	thing: int,
+	other: float,
+	no: string
+}
+
+fn main() {
+	print("Hello, World");
+}
