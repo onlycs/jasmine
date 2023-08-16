@@ -8,7 +8,7 @@ pub enum OneInputOp {
 
 impl Parse for OneInputOp {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        match pair.as_rule() {
+        match pair.into_inner().next()?.as_rule() {
             Rule::not_op => Some(OneInputOp::Not),
             Rule::neg_op => Some(OneInputOp::Neg),
             _ => None,

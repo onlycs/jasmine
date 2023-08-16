@@ -179,30 +179,33 @@ pub enum WhichType {
     Char,
     Ident(String),
     Closure(ClosureTypeData),
+    Array { ty: Box<Type>, dimensions: usize },
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum BorrowType {
     Borrow,
     MutBorrow,
-    Owned,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Type {
-    pub borrow: BorrowType,
+    pub borrows: Vec<BorrowType>,
     pub which: WhichType,
 }
 
 impl Parse for Type {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        let mut borrow_type = BorrowType::Owned;
+        let mut borrows = vec![];
         let mut which = None;
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
-                Rule::borrow_kwd => borrow_type = BorrowType::Borrow,
-                Rule::mut_kwd => borrow_type = BorrowType::MutBorrow,
+                Rule::borrow_kwd => borrows.push(BorrowType::Borrow),
+                Rule::mut_kwd => {
+                    let len = borrows.len();
+                    borrows[len - 1] = BorrowType::MutBorrow;
+                }
                 Rule::int_ty => which = Some(WhichType::Int),
                 Rule::float_ty => which = Some(WhichType::Float),
                 Rule::char_ty => which = Some(WhichType::Char),
@@ -216,13 +219,47 @@ impl Parse for Type {
                     let ident = rule.as_str().to_string();
                     which = Some(WhichType::Ident(ident));
                 }
+                Rule::array_ty => {
+                    let dimensions = rule
+                        .clone()
+                        .into_inner()
+                        .filter(|n| n.as_rule() == Rule::lbrack)
+                        .count();
+
+                    let ty = Type::parse(rule)?;
+
+                    which = Some(WhichType::Array {
+                        ty: Box::new(ty),
+                        dimensions,
+                    });
+                }
                 _ => {}
             }
         }
 
         Some(Type {
-            borrow: borrow_type,
+            borrows,
             which: which?,
         })
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ModuleIdentTree {
+    pub path: Vec<String>,
+}
+
+impl Parse for ModuleIdentTree {
+    fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
+        let mut path = vec![];
+
+        for ident in pair.into_inner() {
+            match ident.as_rule() {
+                Rule::ident => path.push(ident.as_str().to_string()),
+                _ => {}
+            }
+        }
+
+        Some(ModuleIdentTree { path })
     }
 }

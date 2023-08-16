@@ -1,11 +1,100 @@
-let thing: int = 32;
+let a: bool = true;
+let b: bool = false;
 
-struct Example {
-	thing: int,
-	other: float,
-	no: string
+let c: int = 32i;
+let d: int = 32;
+
+let e: float = 32.0f;
+let f: float = 32.0;
+let g: float = 32.;
+
+let h: char = 'a';
+let i: char = '\u{1F60}';
+let j: char = '\n';
+
+let k: string = "hello";
+let l: string = "hello\n";
+let m: string = "hello\u{1F60}";
+
+let n: bool[] = [true, false];
+let o: int[] = [32i, 32];
+let p: float[] = [32.0f, 32.0, 32.];
+let q: char[] = ['a', '\u{1F60}', '\n'];
+let r: string[] = ["hello", "hello\n", "hello\u{1F60}"];
+let s: string[] = [k, l, m];
+
+struct Foo {
+	a: bool,
+	b: int,
+	c: float,
+	d: char,
+	e: string,
+	f: bool[],
+	g: int[],
+	h: float[],
+	i: char[],
+	j: string[],
+	k: Foo,
+	l: Foo[]
+}
+
+impl Foo {
+	fn a(&self) -> bool {
+		println("Hello World!");
+		return true;
+	}
+
+	fn b(&mut self, a: bool[]) -> int {
+		println("Hello World!");
+		return 32;
+	}
+
+	fn c(a: bool, b: int) -> float {
+		println("Hello World!");
+		return 32.0;
+	}
 }
 
 fn main() {
-	print("Hello, World");
+	println("Hello World!");
+
+	if a {
+		println("Hello World!");
+	} else if b {
+		println("Hello World!");
+	} else {
+		println("Hello World!");
+	}
+
+	while a {
+		println("Hello World!");
+		continue;
+	}
+
+	for i: string in s {
+		println("Hello World!");
+		break;
+	}
+
+	let mut a: bool = true;
+
+	a = !a;
+
+	let mut b: int = 32i;
+
+	b += 32;
+
+	let mut c: float = 32.0f;
+
+	c *= 32.0;
+	c /= 32.0;
+	c -= 32.0;
+	c %= 32.0;
 }
+
+let t: &string[] = &r;
+let u: (&string)[] = [&k, &l, &m];
+let v: &(&string)[] = &u;
+let w: &mut (&string)[] = &mut u;
+let x: &mut &mut (&string)[] = &mut w;
+let y: &mut &(&mut & &mut &string)[] = &mut x;

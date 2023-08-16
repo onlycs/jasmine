@@ -28,7 +28,7 @@ impl Parse for JasmineProgramComponent {
             Rule::impl_def => Some(Self::Impl(ImplDef::parse(pair)?)),
             Rule::fn_def => Some(Self::Fn(FnDef::parse(pair)?)),
             Rule::var => Some(Self::Var(VarDef::parse(pair)?)),
-            _ => todo!("Incomplete"),
+            _ => None,
         }
     }
 }

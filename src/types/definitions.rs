@@ -377,7 +377,10 @@ impl ParseMany for CharDecl {
         let mut chars = vec![];
 
         for char_decl in pair.into_inner() {
-            chars.push(Self::parse(char_decl)?);
+            match char_decl.as_rule() {
+                Rule::raw_char | Rule::escape => chars.push(CharDecl::parse(char_decl)?),
+                _ => {}
+            }
         }
 
         Some(chars)
@@ -385,68 +388,84 @@ impl ParseMany for CharDecl {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Definition {
+pub enum DefinitionType {
     Bool(bool),
     Int(i64),
     Float(f64),
     String(Vec<CharDecl>),
     Char(CharDecl),
-    Array(Vec<Definition>),
+    Array(Vec<Expr>),
     StructDef(StructDef),
     Closure(ClosureDef),
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub struct Definition {
+    pub borrows: Vec<BorrowType>,
+    pub kind: DefinitionType,
+}
+
 impl Parse for Definition {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        if let Some(rule) = pair.into_inner().nth(0) {
-            match rule.as_rule() {
-                Rule::r#struct => Some(Definition::StructDef(StructDef::parse(rule)?)),
-                Rule::float => {
-                    let mut rule_str = rule.as_str();
+        let Some(rule) = pair.into_inner().nth(0) else { return None };
 
-                    if rule_str.ends_with("f") {
-                        rule_str = &rule_str[..rule_str.len() - 1];
-                    }
+        let mut kind = None;
+        let mut borrows = vec![];
 
-                    Some(Definition::Float(rule_str.parse::<f64>().ok()?))
+        match rule.as_rule() {
+            Rule::r#struct => kind = Some(DefinitionType::StructDef(StructDef::parse(rule)?)),
+            Rule::float => {
+                let mut rule_str = rule.as_str();
+
+                if rule_str.ends_with("f") {
+                    rule_str = &rule_str[..rule_str.len() - 1];
                 }
-                Rule::int => {
-                    let mut rule_str = rule.as_str();
 
-                    if rule_str.ends_with("i") {
-                        rule_str = &rule_str[..rule_str.len() - 1];
-                    }
-
-                    Some(Definition::Int(rule_str.parse::<i64>().ok()?))
-                }
-                Rule::bool => Some(Definition::Bool(rule.as_str().parse::<bool>().ok()?)),
-                Rule::string => Some(Definition::String(CharDecl::parse_many(rule)?)),
-                Rule::char => {
-                    if let Some(char_decl) = rule.into_inner().next() {
-                        Some(Definition::Char(CharDecl::parse(char_decl)?))
-                    } else {
-                        None
-                    }
-                }
-                Rule::array => {
-                    let mut defs = vec![];
-
-                    for def in rule.into_inner() {
-                        match def.as_rule() {
-                            Rule::definition => {
-                                defs.push(Definition::parse(def)?);
-                            }
-                            _ => {}
-                        }
-                    }
-
-                    Some(Definition::Array(defs))
-                }
-                Rule::closure => Some(Definition::Closure(ClosureDef::parse(rule)?)),
-                _ => None,
+                kind = Some(DefinitionType::Float(rule_str.parse::<f64>().ok()?))
             }
-        } else {
-            None
+            Rule::int => {
+                let mut rule_str = rule.as_str();
+
+                if rule_str.ends_with("i") {
+                    rule_str = &rule_str[..rule_str.len() - 1];
+                }
+
+                kind = Some(DefinitionType::Int(rule_str.parse::<i64>().ok()?))
+            }
+            Rule::bool => kind = Some(DefinitionType::Bool(rule.as_str().parse::<bool>().ok()?)),
+            Rule::string => kind = Some(DefinitionType::String(CharDecl::parse_many(rule)?)),
+            Rule::char => {
+                let Some(char_decl) = rule.into_inner().next() else {return None};
+
+                kind = Some(DefinitionType::Char(CharDecl::parse(char_decl)?))
+            }
+            Rule::array => {
+                let mut exprs = vec![];
+
+                for expr in rule.into_inner() {
+                    match expr.as_rule() {
+                        Rule::expr => {
+                            exprs.push(Expr::parse(expr)?);
+                        }
+                        _ => {}
+                    }
+                }
+
+                kind = Some(DefinitionType::Array(exprs))
+            }
+            Rule::closure => kind = Some(DefinitionType::Closure(ClosureDef::parse(rule)?)),
+
+            Rule::borrow_kwd => borrows.push(BorrowType::Borrow),
+            Rule::mut_kwd => {
+                let len = borrows.len();
+                borrows[len - 1] = BorrowType::MutBorrow;
+            }
+            _ => {}
         }
+
+        Some(Definition {
+            borrows,
+            kind: kind?,
+        })
     }
 }

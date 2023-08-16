@@ -1,19 +1,6 @@
 use super::*;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum ExprType {
-    Definition(Definition),
-    FnCall(FnCall),
-    Ident(String),
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum AfterDotExprType {
-    FnCall(FnCall),
-    Ident(String),
-}
-
-#[derive(Debug, Clone, PartialEq)]
 pub struct FullExpr {
     pub lhs: Box<Expr>,
     pub op: TwoInputOp,
@@ -52,50 +39,112 @@ impl Parse for FullExpr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum BaseExprType {
+    FnCall {
+        data: FnCall,
+        after_dot: Option<Box<BaseExprType>>,
+    },
+    Ident {
+        data: String,
+        static_fn: Option<FnCall>,
+        after_dot: Option<Box<BaseExprType>>,
+    },
+}
+
+impl BaseExprType {
+    pub fn push(&mut self, next: BaseExprType) {
+        let new = Box::new(next);
+
+        match self {
+            BaseExprType::FnCall { after_dot, .. } => {
+                if let Some(after_dot) = after_dot {
+                    after_dot.push(*new);
+                } else {
+                    *after_dot = Some(new);
+                }
+            }
+            BaseExprType::Ident { after_dot, .. } => {
+                if let Some(after_dot) = after_dot {
+                    after_dot.push(*new);
+                } else {
+                    *after_dot = Some(new);
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub struct BaseExpr {
-    pub expr_type: ExprType,
     pub operators: Vec<OneInputOp>,
-    pub dot: Vec<AfterDotExprType>,
+    pub modules: ModuleIdentTree,
+    pub kind: BaseExprType,
 }
 
 impl Parse for BaseExpr {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        let mut after_dot = false;
-        let mut ops = vec![];
-        let mut dot = vec![];
-        let mut expr_type = None;
+        let mut operators = vec![];
+        let mut modules = ModuleIdentTree { path: vec![] };
+        let mut kind = None;
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
-                Rule::one_input_op => {
-                    ops.push(OneInputOp::parse(rule)?);
+                Rule::one_input_op => operators.push(OneInputOp::parse(rule)?),
+                Rule::module_expr => modules = ModuleIdentTree::parse(rule)?,
+                Rule::ident => {
+                    kind = Some(BaseExprType::Ident {
+                        data: rule.as_str().to_string(),
+                        static_fn: None,
+                        after_dot: None,
+                    });
                 }
-                Rule::fn_call if !after_dot => {
-                    expr_type = Some(ExprType::FnCall(FnCall::parse(rule)?));
-                    after_dot = true;
+                Rule::fn_call => {
+                    kind = Some(BaseExprType::FnCall {
+                        data: FnCall::parse(rule)?,
+                        after_dot: None,
+                    });
                 }
-                Rule::definition if !after_dot => {
-                    expr_type = Some(ExprType::Definition(Definition::parse(rule)?));
-                    after_dot = true;
+                Rule::static_fn => {
+                    let Some(BaseExprType::Ident { static_fn, .. }) = &mut kind else {
+                        return None;
+                    };
+
+                    *static_fn = Some(FnCall::parse(rule)?);
                 }
-                Rule::ident if !after_dot => {
-                    expr_type = Some(ExprType::Ident(rule.as_str().to_string()));
-                    after_dot = true;
+                Rule::object_fn => {
+                    let Some(base_expr) = &mut kind else {
+                        return None;
+                    };
+
+                    let fn_rule = rule.into_inner().find(|n| n.as_rule() == Rule::fn_call)?;
+
+                    base_expr.push(BaseExprType::FnCall {
+                        data: FnCall::parse(fn_rule)?,
+                        after_dot: None,
+                    });
                 }
-                Rule::fn_call if after_dot => {
-                    dot.push(AfterDotExprType::FnCall(FnCall::parse(rule)?));
+                Rule::object_prop => {
+                    let Some(base_expr) = &mut kind else {
+                        return None;
+                    };
+
+                    let ident = rule.into_inner().find(|n| n.as_rule() == Rule::ident)?;
+
+                    base_expr.push(BaseExprType::Ident {
+                        data: ident.as_str().to_string(),
+                        static_fn: None,
+                        after_dot: None,
+                    });
                 }
-                Rule::ident if after_dot => {
-                    dot.push(AfterDotExprType::Ident(rule.as_str().to_string()));
-                }
+                Rule::base_expr => return Some(BaseExpr::parse(rule)?),
                 _ => {}
             }
         }
 
         Some(BaseExpr {
-            expr_type: expr_type?,
-            operators: ops,
-            dot,
+            operators,
+            modules,
+            kind: kind?,
         })
     }
 }
@@ -104,6 +153,7 @@ impl Parse for BaseExpr {
 pub enum Expr {
     Base(BaseExpr),
     Full(FullExpr),
+    Definition(Definition),
 }
 
 impl Parse for Expr {
@@ -113,6 +163,7 @@ impl Parse for Expr {
         match inner_pr.as_rule() {
             Rule::base_expr => Some(Expr::Base(BaseExpr::parse(inner_pr)?)),
             Rule::op_expr => Some(Expr::Full(FullExpr::parse(inner_pr)?)),
+            Rule::definition => Some(Expr::Definition(Definition::parse(inner_pr)?)),
             _ => None,
         }
     }
