@@ -1,23 +1,23 @@
 use super::*;
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum OneInputOp {
+#[derive(Clone, Debug, PartialEq)]
+pub enum UnaryOperator {
     Not,
     Neg,
 }
 
-impl Parse for OneInputOp {
+impl Parse for UnaryOperator {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
         match pair.into_inner().next()?.as_rule() {
-            Rule::not_op => Some(OneInputOp::Not),
-            Rule::neg_op => Some(OneInputOp::Neg),
+            Rule::not_op => Some(UnaryOperator::Not),
+            Rule::neg_op => Some(UnaryOperator::Neg),
             _ => None,
         }
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum TwoInputOp {
+#[derive(Clone, Debug, PartialEq)]
+pub enum BinaryOperator {
     Add,
     Sub,
     Mul,
@@ -34,23 +34,23 @@ pub enum TwoInputOp {
     Gte,
 }
 
-impl Parse for TwoInputOp {
+impl Parse for BinaryOperator {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
         match pair.into_inner().next()?.as_rule() {
-            Rule::add_op => Some(TwoInputOp::Add),
-            Rule::sub_op => Some(TwoInputOp::Sub),
-            Rule::mul_op => Some(TwoInputOp::Mul),
-            Rule::div_op => Some(TwoInputOp::Div),
-            Rule::mod_op => Some(TwoInputOp::Mod),
-            Rule::and_op => Some(TwoInputOp::And),
-            Rule::or_op => Some(TwoInputOp::Or),
-            Rule::not_op => Some(TwoInputOp::Not),
-            Rule::eq_op => Some(TwoInputOp::Eq),
-            Rule::neq_op => Some(TwoInputOp::Neq),
-            Rule::lt_op => Some(TwoInputOp::Lt),
-            Rule::gt_op => Some(TwoInputOp::Gt),
-            Rule::lte_op => Some(TwoInputOp::Lte),
-            Rule::gte_op => Some(TwoInputOp::Gte),
+            Rule::add_op => Some(BinaryOperator::Add),
+            Rule::sub_op => Some(BinaryOperator::Sub),
+            Rule::mul_op => Some(BinaryOperator::Mul),
+            Rule::div_op => Some(BinaryOperator::Div),
+            Rule::mod_op => Some(BinaryOperator::Mod),
+            Rule::and_op => Some(BinaryOperator::And),
+            Rule::or_op => Some(BinaryOperator::Or),
+            Rule::not_op => Some(BinaryOperator::Not),
+            Rule::eq_op => Some(BinaryOperator::Eq),
+            Rule::neq_op => Some(BinaryOperator::Neq),
+            Rule::lt_op => Some(BinaryOperator::Lt),
+            Rule::gt_op => Some(BinaryOperator::Gt),
+            Rule::lte_op => Some(BinaryOperator::Lte),
+            Rule::gte_op => Some(BinaryOperator::Gte),
             _ => None,
         }
     }

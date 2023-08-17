@@ -101,3 +101,9 @@ let v: &(&string)[] = &u;
 let w: &mut (&string)[] = &mut u;
 let x: &mut &mut (&string)[] = &mut w;
 let y: &mut &(&mut & &mut &string)[] = &mut x;
+
+enum Z {
+	VariantA(int),
+	VariantB(float),
+	VariantC
+}

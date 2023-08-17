@@ -1,33 +1,45 @@
 pub mod arguments;
+pub mod blocks;
+pub mod chars;
 pub mod definitions;
-pub mod expr;
-pub mod misc;
+pub mod enums;
+pub mod expressions;
+pub mod functions;
+pub mod oop;
 pub mod operators;
-pub mod statement;
+pub mod statements;
+pub mod types;
 
 pub use crate::prelude::*;
 pub use arguments::*;
+pub use blocks::*;
+pub use chars::*;
 pub use definitions::*;
-pub use expr::*;
-pub use misc::*;
+pub use enums::*;
+pub use expressions::*;
+pub use functions::*;
+pub use oop::*;
 pub use operators::*;
-pub use statement::*;
+pub use statements::*;
+pub use types::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum JasmineProgramComponent {
-    Struct(StructDef),
-    Impl(ImplDef),
-    Fn(FnDef),
-    Var(VarDef),
+    Struct(Structure),
+    Impl(Impl),
+    Fn(Function),
+    Var(Variable),
+    Enum(Enumeration),
 }
 
 impl Parse for JasmineProgramComponent {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
         match pair.as_rule() {
-            Rule::struct_def => Some(Self::Struct(StructDef::parse(pair)?)),
-            Rule::impl_def => Some(Self::Impl(ImplDef::parse(pair)?)),
-            Rule::fn_def => Some(Self::Fn(FnDef::parse(pair)?)),
-            Rule::var => Some(Self::Var(VarDef::parse(pair)?)),
+            Rule::struct_def => Some(Self::Struct(Structure::parse(pair)?)),
+            Rule::impl_def => Some(Self::Impl(Impl::parse(pair)?)),
+            Rule::fn_def => Some(Self::Fn(Function::parse(pair)?)),
+            Rule::var => Some(Self::Var(Variable::parse(pair)?)),
+            Rule::enum_def => Some(Self::Enum(Enumeration::parse(pair)?)),
             _ => None,
         }
     }

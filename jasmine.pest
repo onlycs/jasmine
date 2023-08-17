@@ -67,7 +67,8 @@ self_kwd     =  { "self" }
 mut_kwd      =  { "mut" }
 borrow_kwd   =  { "&" }
 in_kwd       = _{ "in" }
-kwd          = _{ fn_kwd | let_kwd | if_kwd | else_kwd | while_kwd | for_kwd | return_kwd | break_kwd | continue_kwd | struct_kwd }
+enum_kwd     = _{ "enum" }
+kwd          = _{ fn_kwd | let_kwd | if_kwd | else_kwd | while_kwd | for_kwd | return_kwd | break_kwd | continue_kwd | struct_kwd | enum_kwd }
 
 /* ** Identifiers ** */
 ident_char = @{ ASCII_ALPHANUMERIC | "_" }
@@ -183,5 +184,10 @@ struct     = { ident ~ lbrace ~ call_arguments ~ rbrace }
 /* ** Impl ** */
 impl_def = { impl_kwd ~ ident ~ lbrace ~ (impl_fn_def)* ~ rbrace }
 
+/* ** Enums ** */
+enum_def     =  { enum_kwd ~ ident ~ enum_block }
+enum_block   = _{ lbrace ~ enum_variant ~ (comma ~ enum_variant)* ~ rbrace }
+enum_variant =  { ident ~ (lparen ~ ty ~ rparen)? }
+
 /* ** Program ** */
-program = { SOI ~ (struct_def | impl_def | fn_def | (var ~ semi))* ~ EOI }
+program = { SOI ~ (struct_def | impl_def | fn_def | enum_def | (var ~ semi))* ~ EOI }

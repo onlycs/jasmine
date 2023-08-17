@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum AssignType {
     Assign,
     AddAssign,
@@ -10,14 +10,14 @@ pub enum AssignType {
     ModAssign,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Stmt {
+#[derive(Clone, Debug, PartialEq)]
+pub struct Statement {
     pub ident: String,
     pub assign_type: AssignType,
-    pub expr: Expr,
+    pub expr: Expression,
 }
 
-impl Parse for Stmt {
+impl Parse for Statement {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
         let mut ident = None;
         let mut assign_type = None;
@@ -32,7 +32,7 @@ impl Parse for Stmt {
                 Rule::mul_assign => assign_type = Some(AssignType::MulAssign),
                 Rule::div_assign => assign_type = Some(AssignType::DivAssign),
                 Rule::mod_assign => assign_type = Some(AssignType::ModAssign),
-                Rule::expr => expr = Expr::parse(rule),
+                Rule::expr => expr = Expression::parse(rule),
                 _ => {}
             }
         }

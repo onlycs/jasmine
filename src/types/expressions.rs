@@ -2,9 +2,9 @@ use super::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct FullExpr {
-    pub lhs: Box<Expr>,
-    pub op: TwoInputOp,
-    pub rhs: Box<Expr>,
+    pub lhs: Box<Expression>,
+    pub op: BinaryOperator,
+    pub rhs: Box<Expression>,
 }
 
 impl Parse for FullExpr {
@@ -17,13 +17,13 @@ impl Parse for FullExpr {
         for rule in pair.into_inner() {
             match rule.as_rule() {
                 Rule::op_expr_recurse if !on_rhs => {
-                    lhs = Some(Expr::parse(rule)?);
+                    lhs = Some(Expression::parse(rule)?);
                 }
                 Rule::op_expr_recurse if on_rhs => {
-                    rhs = Some(Expr::parse(rule)?);
+                    rhs = Some(Expression::parse(rule)?);
                 }
                 Rule::two_input_op => {
-                    op = Some(TwoInputOp::parse(rule)?);
+                    op = Some(BinaryOperator::parse(rule)?);
                     on_rhs = true;
                 }
                 _ => {}
@@ -41,12 +41,12 @@ impl Parse for FullExpr {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BaseExprType {
     FnCall {
-        data: FnCall,
+        data: FunctionCall,
         after_dot: Option<Box<BaseExprType>>,
     },
     Ident {
         data: String,
-        static_fn: Option<FnCall>,
+        static_fn: Option<FunctionCall>,
         after_dot: Option<Box<BaseExprType>>,
     },
 }
@@ -76,7 +76,7 @@ impl BaseExprType {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct BaseExpr {
-    pub operators: Vec<OneInputOp>,
+    pub operators: Vec<UnaryOperator>,
     pub kind: BaseExprType,
 }
 
@@ -87,7 +87,7 @@ impl Parse for BaseExpr {
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
-                Rule::one_input_op => operators.push(OneInputOp::parse(rule)?),
+                Rule::one_input_op => operators.push(UnaryOperator::parse(rule)?),
                 Rule::ident => {
                     kind = Some(BaseExprType::Ident {
                         data: rule.as_str().to_string(),
@@ -97,7 +97,7 @@ impl Parse for BaseExpr {
                 }
                 Rule::fn_call => {
                     kind = Some(BaseExprType::FnCall {
-                        data: FnCall::parse(rule)?,
+                        data: FunctionCall::parse(rule)?,
                         after_dot: None,
                     });
                 }
@@ -106,7 +106,7 @@ impl Parse for BaseExpr {
                         return None;
                     };
 
-                    *static_fn = Some(FnCall::parse(rule)?);
+                    *static_fn = Some(FunctionCall::parse(rule)?);
                 }
                 Rule::object_fn => {
                     let Some(base_expr) = &mut kind else {
@@ -116,7 +116,7 @@ impl Parse for BaseExpr {
                     let fn_rule = rule.into_inner().find(|n| n.as_rule() == Rule::fn_call)?;
 
                     base_expr.push(BaseExprType::FnCall {
-                        data: FnCall::parse(fn_rule)?,
+                        data: FunctionCall::parse(fn_rule)?,
                         after_dot: None,
                     });
                 }
@@ -146,20 +146,20 @@ impl Parse for BaseExpr {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Expr {
+pub enum Expression {
     Base(BaseExpr),
     Full(FullExpr),
     Definition(Definition),
 }
 
-impl Parse for Expr {
+impl Parse for Expression {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
         let inner_pr = pair.into_inner().next()?;
 
         match inner_pr.as_rule() {
-            Rule::base_expr => Some(Expr::Base(BaseExpr::parse(inner_pr)?)),
-            Rule::op_expr => Some(Expr::Full(FullExpr::parse(inner_pr)?)),
-            Rule::definition => Some(Expr::Definition(Definition::parse(inner_pr)?)),
+            Rule::base_expr => Some(Expression::Base(BaseExpr::parse(inner_pr)?)),
+            Rule::op_expr => Some(Expression::Full(FullExpr::parse(inner_pr)?)),
+            Rule::definition => Some(Expression::Definition(Definition::parse(inner_pr)?)),
             _ => None,
         }
     }

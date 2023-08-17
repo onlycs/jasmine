@@ -1,6 +1,6 @@
 use super::*;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct Arg {
     pub ident: String,
     pub ty: Type,
@@ -42,9 +42,9 @@ impl ParseMany for Arg {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct CallArg {
-    pub expr: Expr,
+    pub expr: Expression,
 }
 
 impl Parse for CallArg {
@@ -53,7 +53,7 @@ impl Parse for CallArg {
 
         for call_arg_part in pair.into_inner() {
             match call_arg_part.as_rule() {
-                Rule::expr => expr = Some(Expr::parse(call_arg_part)?),
+                Rule::expr => expr = Some(Expression::parse(call_arg_part)?),
                 _ => {}
             }
         }
