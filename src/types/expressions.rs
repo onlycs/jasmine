@@ -46,6 +46,7 @@ pub enum BaseExprType {
     },
     Ident {
         data: String,
+        /// this can also be an Enum creation
         static_fn: Option<FunctionCall>,
         after_dot: Option<Box<BaseExprType>>,
     },
@@ -86,6 +87,8 @@ impl Parse for BaseExpr {
         let mut kind = None;
 
         for rule in pair.into_inner() {
+            println!("Parsing {:?}: {}", rule.as_rule(), rule.as_str());
+
             match rule.as_rule() {
                 Rule::one_input_op => operators.push(UnaryOperator::parse(rule)?),
                 Rule::ident => {
@@ -106,7 +109,11 @@ impl Parse for BaseExpr {
                         return None;
                     };
 
-                    *static_fn = Some(FunctionCall::parse(rule)?);
+                    *static_fn = Some(FunctionCall::parse(
+                        rule.into_inner()
+                            .filter(|f| f.as_rule() == Rule::fn_call)
+                            .next()?,
+                    )?);
                 }
                 Rule::object_fn => {
                     let Some(base_expr) = &mut kind else {

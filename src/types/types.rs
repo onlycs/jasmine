@@ -48,6 +48,7 @@ pub enum WhichType {
     Ident(String),
     Closure(ClosureTypeData),
     Array { ty: Box<Type>, dimensions: usize },
+    Generic { outer: Box<Type>, inner: Box<Type> },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -100,6 +101,17 @@ impl Parse for Type {
                         ty: Box::new(ty),
                         dimensions,
                     });
+                }
+                Rule::generic_ty => {
+                    let outer = Type::parse(rule.clone()).map(Box::new)?;
+                    let inner = Type::parse(
+                        rule.into_inner()
+                            .filter(|r| r.as_rule() == Rule::ty)
+                            .next()?,
+                    )
+                    .map(Box::new)?;
+
+                    which = Some(WhichType::Generic { outer, inner })
                 }
                 _ => {}
             }

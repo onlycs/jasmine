@@ -49,7 +49,7 @@ generic_ty = { not_generic_ty ~ "<" ~ ty ~ ">" }
 
 not_array_ty   = _{ (int_ty | float_ty | bool_ty | char_ty | string_ty | closure_ty | ident_ty) }
 not_generic_ty = _{ array_ty | not_array_ty }
-ty             =  { borrow ~ (not_generic_ty | generic_ty) }
+ty             =  { borrow ~ (generic_ty | not_generic_ty) }
 
 /* ** Keywords ** */
 fn_kwd       = _{ "fn" }
