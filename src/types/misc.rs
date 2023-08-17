@@ -243,23 +243,3 @@ impl Parse for Type {
         })
     }
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ModuleIdentTree {
-    pub path: Vec<String>,
-}
-
-impl Parse for ModuleIdentTree {
-    fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        let mut path = vec![];
-
-        for ident in pair.into_inner() {
-            match ident.as_rule() {
-                Rule::ident => path.push(ident.as_str().to_string()),
-                _ => {}
-            }
-        }
-
-        Some(ModuleIdentTree { path })
-    }
-}

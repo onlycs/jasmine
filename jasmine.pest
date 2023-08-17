@@ -35,6 +35,8 @@ array = { lbrack ~ (expr ~ (comma ~ expr)*)? ~ rbrack }
 definition = { borrow ~ (array | string | struct | float | int | bool | char | closure) }
 
 /* ** Types ** */
+borrow = _{ (borrow_kwd ~ (mut_kwd)?)* }
+
 int_ty     = { "int" }
 float_ty   = { "float" }
 bool_ty    = { "bool" }
@@ -43,10 +45,11 @@ string_ty  = { "string" }
 closure_ty = { "Closure<(" ~ (ty ~ (comma ~ ty)*)? ~ ")" ~ ("," ~ ty)? ~ ">" }
 ident_ty   = { ident }
 array_ty   = { (not_array_ty | (lparen ~ borrow ~ not_array_ty ~ rparen)) ~ (lbrack ~ rbrack)+ }
+generic_ty = { not_generic_ty ~ "<" ~ ty ~ ">" }
 
-not_array_ty = _{ (int_ty | float_ty | bool_ty | char_ty | string_ty | closure_ty | ident_ty) }
-borrow       = _{ (borrow_kwd ~ (mut_kwd)?)* }
-ty           =  { borrow ~ (array_ty | not_array_ty) }
+not_array_ty   = _{ (int_ty | float_ty | bool_ty | char_ty | string_ty | closure_ty | ident_ty) }
+not_generic_ty = _{ array_ty | not_array_ty }
+ty             =  { borrow ~ (not_generic_ty | generic_ty) }
 
 /* ** Keywords ** */
 fn_kwd       = _{ "fn" }
@@ -96,35 +99,34 @@ two_input_op = { add_op | sub_op | mul_op | div_op | mod_op | and_op | or_op | e
 one_input_op = { not_op | neg_op }
 
 /* ** Grammar ** */
-lparen = { "(" }
-rparen = { ")" }
-semi   = { ";" }
-comma  = { "," }
-lbrace = { "{" }
-rbrace = { "}" }
-colon  = { ":" }
-lbrack = { "[" }
-rbrack = { "]" }
-dot    = { "." }
-dblcln = { "::" }
+lparen = _{ "(" }
+rparen = _{ ")" }
+semi   =  { ";" }
+comma  =  { "," }
+lbrace =  { "{" }
+rbrace =  { "}" }
+colon  =  { ":" }
+lbrack =  { "[" }
+rbrack =  { "]" }
+dot    =  { "." }
+dblcln =  { "::" }
 
 /* ** Expressions ** */
-module_expr = { ident ~ (dblcln ~ ident)* }
 static_fn   = { dblcln ~ fn_call }
 object_fn   = { dot ~ fn_call }
 object_prop = { dot ~ ident }
 
 base_expr = {
-    (one_input_op* ~ borrow ~ (module_expr ~ dblcln)? ~ ((fn_call | (ident ~ static_fn?)) ~ (object_fn | object_prop)*))
+    (one_input_op* ~ borrow ~ ((fn_call | (ident ~ static_fn?)) ~ (object_fn | object_prop)*))
   | (lparen ~ base_expr ~ rparen)
 }
 
-op_expr = { op_expr_recurse ~ (two_input_op ~ op_expr_recurse)* }
+op_expr = { op_expr_recurse ~ (two_input_op ~ op_expr_recurse)+ }
 
 op_expr_paren   = _{ lparen ~ op_expr ~ rparen }
 op_expr_recurse =  { op_expr_paren | base_expr | definition }
 
-expr = { definition | base_expr | op_expr }
+expr = { definition | op_expr | base_expr }
 
 /* ** Assign ** */
 assign     = { "=" }

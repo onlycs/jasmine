@@ -77,20 +77,17 @@ impl BaseExprType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BaseExpr {
     pub operators: Vec<OneInputOp>,
-    pub modules: ModuleIdentTree,
     pub kind: BaseExprType,
 }
 
 impl Parse for BaseExpr {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
         let mut operators = vec![];
-        let mut modules = ModuleIdentTree { path: vec![] };
         let mut kind = None;
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
                 Rule::one_input_op => operators.push(OneInputOp::parse(rule)?),
-                Rule::module_expr => modules = ModuleIdentTree::parse(rule)?,
                 Rule::ident => {
                     kind = Some(BaseExprType::Ident {
                         data: rule.as_str().to_string(),
@@ -143,7 +140,6 @@ impl Parse for BaseExpr {
 
         Some(BaseExpr {
             operators,
-            modules,
             kind: kind?,
         })
     }

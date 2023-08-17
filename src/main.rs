@@ -9,6 +9,4 @@ fn main() {
         "{:#?}",
         parser::parse(PathBuf::new().join("example.jasmine")).unwrap()
     );
-
-    println!("Hello, world!");
 }

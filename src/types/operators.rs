@@ -36,7 +36,7 @@ pub enum TwoInputOp {
 
 impl Parse for TwoInputOp {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        match pair.as_rule() {
+        match pair.into_inner().next()?.as_rule() {
             Rule::add_op => Some(TwoInputOp::Add),
             Rule::sub_op => Some(TwoInputOp::Sub),
             Rule::mul_op => Some(TwoInputOp::Mul),

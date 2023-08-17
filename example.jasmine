@@ -90,6 +90,9 @@ fn main() {
 	c /= 32.0;
 	c -= 32.0;
 	c %= 32.0;
+
+	let mut d: int = b + 12;
+	let mut e: int = ((12 + 13) / (2 + 4)) + 9;
 }
 
 let t: &string[] = &r;

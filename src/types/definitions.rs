@@ -424,7 +424,7 @@ impl Parse for Definition {
                 kind = Some(DefinitionType::Float(rule_str.parse::<f64>().ok()?))
             }
             Rule::int => {
-                let mut rule_str = rule.as_str();
+                let mut rule_str = rule.as_str().trim();
 
                 if rule_str.ends_with("i") {
                     rule_str = &rule_str[..rule_str.len() - 1];
