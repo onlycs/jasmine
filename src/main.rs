@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
+mod jasmine;
 mod parser;
 mod prelude;
-mod types;
 
 fn main() {
     println!(

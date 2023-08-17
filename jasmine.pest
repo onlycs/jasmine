@@ -68,6 +68,7 @@ mut_kwd      =  { "mut" }
 borrow_kwd   =  { "&" }
 in_kwd       = _{ "in" }
 enum_kwd     = _{ "enum" }
+where_kwd    = _{ "where" }
 kwd          = _{ fn_kwd | let_kwd | if_kwd | else_kwd | while_kwd | for_kwd | return_kwd | break_kwd | continue_kwd | struct_kwd | enum_kwd }
 
 /* ** Identifiers ** */
@@ -114,11 +115,12 @@ dblcln =  { "::" }
 
 /* ** Expressions ** */
 static_fn   = { dblcln ~ fn_call }
+unit_enum   = { dblcln ~ ident }
 object_fn   = { dot ~ fn_call }
 object_prop = { dot ~ ident }
 
 base_expr = {
-    (one_input_op* ~ borrow ~ ((fn_call | (ident ~ static_fn?)) ~ (object_fn | object_prop)*))
+    (one_input_op* ~ borrow ~ ((fn_call | (ident ~ (static_fn | unit_enum)?)) ~ (object_fn | object_prop)*))
   | (lparen ~ base_expr ~ rparen)
 }
 
@@ -178,16 +180,21 @@ while_def = { while_kwd ~ expr ~ block }
 for_def = { for_kwd ~ define_argument ~ in_kwd ~ expr ~ block }
 
 /* ** Structs ** */
-struct_def = { struct_kwd ~ ident ~ lbrace ~ define_arguments ~ rbrace }
+struct_def = { struct_kwd ~ ident ~ generic_args? ~ where_clause? ~ lbrace ~ define_arguments ~ rbrace }
 struct     = { ident ~ lbrace ~ call_arguments ~ rbrace }
 
 /* ** Impl ** */
 impl_def = { impl_kwd ~ ident ~ lbrace ~ (impl_fn_def)* ~ rbrace }
 
 /* ** Enums ** */
-enum_def     =  { enum_kwd ~ ident ~ enum_block }
+enum_def     =  { enum_kwd ~ ident ~ generic_args? ~ where_clause? ~ enum_block }
 enum_block   = _{ lbrace ~ enum_variant ~ (comma ~ enum_variant)* ~ rbrace }
 enum_variant =  { ident ~ (lparen ~ ty ~ rparen)? }
+
+/* ** Generic Arguments ** */
+generic_args = { "<" ~ ident ~ (comma ~ ident)* ~ ">" }
+where_unit   = { (ident ~ (assign | colon) ~ ident) }
+where_clause = { where_kwd ~ where_unit ~ (comma ~ where_unit)* }
 
 /* ** Program ** */
 program = { SOI ~ (struct_def | impl_def | fn_def | enum_def | (var ~ semi))* ~ EOI }

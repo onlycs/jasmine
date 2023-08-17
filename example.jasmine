@@ -115,3 +115,21 @@ let aa: Closure<(int, float), float> = |a: int, b: float| {
 };
 
 let b: Option<string> = Option::Some("Yessir");
+
+struct Generic<G, G2>
+where
+	G = ExtendsThisClassInJava,
+	G2: ImplementsThisInterfaceInJava
+{
+	g: G,
+	g2: G2
+}
+
+enum GenericEnum<G, G2>
+where
+	G: ImplementsThisInterfaceInJava,
+	G2 = ExtendsThisClassInJava
+{
+	G(G),
+	G2(G2)
+}

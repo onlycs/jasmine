@@ -1,7 +1,6 @@
 use std::{fs::File, io::Read, path::PathBuf};
 
-use crate::prelude::*;
-use crate::types::*;
+use crate::jasmine::*;
 use pest::Parser;
 use pest_derive::Parser;
 

@@ -4,12 +4,16 @@ use super::*;
 pub struct Structure {
     pub ident: String,
     pub fields: Vec<Arg>,
+    pub generics: Option<GenericArguments>,
+    pub where_clause: Option<Vec<WhereUnit>>,
 }
 
 impl Parse for Structure {
     fn parse(pair: Pair<'_, Rule>) -> Option<Structure> {
         let mut fields = vec![];
         let mut ident = None;
+        let mut generics = None;
+        let mut where_clause = None;
 
         for struct_part in pair.into_inner() {
             match struct_part.as_rule() {
@@ -21,6 +25,12 @@ impl Parse for Structure {
 
                     fields = args;
                 }
+                Rule::generic_args => {
+                    generics = Some(GenericArguments::parse(struct_part)?);
+                }
+                Rule::where_clause => {
+                    where_clause = Some(WhereUnit::parse_many(struct_part)?);
+                }
                 _ => {}
             }
         }
@@ -28,6 +38,8 @@ impl Parse for Structure {
         Some(Structure {
             ident: ident?,
             fields,
+            generics,
+            where_clause,
         })
     }
 }

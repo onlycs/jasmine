@@ -46,8 +46,10 @@ pub enum BaseExprType {
     },
     Ident {
         data: String,
-        /// this can also be an Enum creation
+        /// this can also be an Enum creation (with data)
         static_fn: Option<FunctionCall>,
+        /// Enumw without data
+        unit_enum: Option<String>,
         after_dot: Option<Box<BaseExprType>>,
     },
 }
@@ -95,6 +97,7 @@ impl Parse for BaseExpr {
                     kind = Some(BaseExprType::Ident {
                         data: rule.as_str().to_string(),
                         static_fn: None,
+                        unit_enum: None,
                         after_dot: None,
                     });
                 }
@@ -114,6 +117,20 @@ impl Parse for BaseExpr {
                             .filter(|f| f.as_rule() == Rule::fn_call)
                             .next()?,
                     )?);
+                }
+                Rule::unit_enum => {
+                    let Some(BaseExprType::Ident { unit_enum, .. }) = &mut kind else {
+                        return None;
+                    };
+
+                    *unit_enum = Some(
+                        rule.into_inner()
+                            .filter(|f| f.as_rule() == Rule::ident)
+                            .next()?
+                            .as_str()
+                            .trim()
+                            .to_string(),
+                    );
                 }
                 Rule::object_fn => {
                     let Some(base_expr) = &mut kind else {
@@ -137,6 +154,7 @@ impl Parse for BaseExpr {
                     base_expr.push(BaseExprType::Ident {
                         data: ident.as_str().to_string(),
                         static_fn: None,
+                        unit_enum: None,
                         after_dot: None,
                     });
                 }

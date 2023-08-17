@@ -2,8 +2,8 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct EnumVariant {
-    ident: String,
-    data: Option<Type>,
+    pub ident: String,
+    pub data: Option<Type>,
 }
 
 impl Parse for EnumVariant {
@@ -28,8 +28,11 @@ impl Parse for EnumVariant {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Enumeration {
-    ident: String,
-    variants: Vec<EnumVariant>,
+    pub ident: String,
+    pub variants: Vec<EnumVariant>,
+
+    pub generics: Option<GenericArguments>,
+    pub where_clause: Option<Vec<WhereUnit>>,
 }
 
 impl Parse for Enumeration {
@@ -37,10 +40,20 @@ impl Parse for Enumeration {
         let mut ident = None;
         let mut variants = vec![];
 
+        let mut generics = None;
+        let mut where_clause = None;
+
         for rule in pair.into_inner() {
             match rule.as_rule() {
                 Rule::ident => ident = Some(rule.as_str().to_string()),
                 Rule::enum_variant => variants.push(EnumVariant::parse(rule)?),
+
+                Rule::generic_args => {
+                    generics = Some(GenericArguments::parse(rule)?);
+                }
+                Rule::where_clause => {
+                    where_clause = Some(WhereUnit::parse_many(rule)?);
+                }
                 _ => {}
             }
         }
@@ -48,6 +61,8 @@ impl Parse for Enumeration {
         Some(Self {
             ident: ident?,
             variants,
+            generics,
+            where_clause,
         })
     }
 }
