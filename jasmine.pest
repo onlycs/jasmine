@@ -24,32 +24,29 @@ unicode_escape    = { "u" ~ lbrace ~ unicode_hex ~ rbrace }
 escape            = { "\\" ~ (escape_predefined | unicode_escape) }
 
 /* Strings and Chars */
-raw_char = { !("\\") ~ ANY }
+raw_char = ${ !("\\") ~ ANY }
 
-char   = { "'" ~ ((!("'") ~ raw_char) | escape) ~ "'" }
-string = { "\"" ~ ((!("\"") ~ raw_char) | escape)* ~ "\"" }
+char   = ${ "'" ~ ((!("'") ~ raw_char) | escape) ~ "'" }
+string = ${ "\"" ~ ((!("\"") ~ raw_char) | escape)* ~ "\"" }
 
 /* Arrays */
 array = { lbrack ~ (expr ~ (comma ~ expr)*)? ~ rbrack }
 
-definition = { borrow ~ (array | string | struct | float | int | bool | char | closure) }
-
-/* ** Types ** */
-borrow = _{ (borrow_kwd ~ (mut_kwd)?)* }
+definition = { (array | string | struct | float | int | bool | char | closure) }
 
 int_ty     = { "int" }
 float_ty   = { "float" }
 bool_ty    = { "bool" }
 char_ty    = { "char" }
 string_ty  = { "string" }
-closure_ty = { "Closure<(" ~ (ty ~ (comma ~ ty)*)? ~ ")" ~ ("," ~ ty)? ~ ">" }
+closure_ty = { "Closure<" ~ lparen ~ (generic_kwd? ~ ty ~ (comma ~ generic_kwd? ~ ty)*)? ~ rparen ~ ("," ~ generic_kwd? ~ ty)? ~ ">" }
 ident_ty   = { ident }
-array_ty   = { (not_array_ty | (lparen ~ borrow ~ not_array_ty ~ rparen)) ~ (lbrack ~ rbrack)+ }
-generic_ty = { not_generic_ty ~ "<" ~ ty ~ ">" }
+array_ty   = { (not_array_ty | (lparen ~ not_array_ty ~ rparen)) ~ (lbrack ~ rbrack)+ }
+generic_ty = { not_generic_ty ~ "<" ~ ty ~ (comma ~ ty)* ~ ">" }
 
 not_array_ty   = _{ (int_ty | float_ty | bool_ty | char_ty | string_ty | closure_ty | ident_ty) }
 not_generic_ty = _{ array_ty | not_array_ty }
-ty             =  { borrow ~ (generic_ty | not_generic_ty) }
+ty             =  { generic_ty | not_generic_ty }
 
 /* ** Keywords ** */
 fn_kwd       = _{ "fn" }
@@ -65,7 +62,8 @@ struct_kwd   = _{ "struct" }
 impl_kwd     = _{ "impl" }
 self_kwd     =  { "self" }
 mut_kwd      =  { "mut" }
-borrow_kwd   =  { "&" }
+generic_kwd  =  { "generic" }
+match_kwd    = _{ "match" }
 in_kwd       = _{ "in" }
 enum_kwd     = _{ "enum" }
 where_kwd    = _{ "where" }
@@ -73,7 +71,7 @@ kwd          = _{ fn_kwd | let_kwd | if_kwd | else_kwd | while_kwd | for_kwd | r
 
 /* ** Identifiers ** */
 ident_char = @{ ASCII_ALPHANUMERIC | "_" }
-ident_str  = @{ ASCII_ALPHA ~ ident_char* }
+ident_str  = @{ (ASCII_ALPHA | "_") ~ ident_char* }
 ident      = ${ ident_str }
 
 /* ** Mathmatical Operators ** */
@@ -101,17 +99,17 @@ two_input_op = { add_op | sub_op | mul_op | div_op | mod_op | and_op | or_op | e
 one_input_op = { not_op | neg_op }
 
 /* ** Grammar ** */
-lparen = _{ "(" }
-rparen = _{ ")" }
-semi   =  { ";" }
-comma  =  { "," }
-lbrace =  { "{" }
-rbrace =  { "}" }
-colon  =  { ":" }
-lbrack =  { "[" }
-rbrack =  { "]" }
-dot    =  { "." }
-dblcln =  { "::" }
+lparen = { "(" }
+rparen = { ")" }
+semi   = { ";" }
+comma  = { "," }
+lbrace = { "{" }
+rbrace = { "}" }
+colon  = { ":" }
+lbrack = { "[" }
+rbrack = { "]" }
+dot    = { "." }
+dblcln = { "::" }
 
 /* ** Expressions ** */
 static_fn   = { dblcln ~ fn_call }
@@ -120,7 +118,7 @@ object_fn   = { dot ~ fn_call }
 object_prop = { dot ~ ident }
 
 base_expr = {
-    (one_input_op* ~ borrow ~ ((fn_call | (ident ~ (static_fn | unit_enum)?)) ~ (object_fn | object_prop)*))
+    (one_input_op* ~ ((fn_call | (ident ~ (static_fn | unit_enum)?)) ~ (object_fn | object_prop)*))
   | (lparen ~ base_expr ~ rparen)
 }
 
@@ -152,20 +150,20 @@ define_arguments = { define_argument ~ (comma ~ define_argument)* }
 call_argument  = { expr }
 call_arguments = { call_argument ~ (comma ~ call_argument)* }
 
-impl_define_arguments = { (borrow_kwd ~ mut_kwd?)? ~ self_kwd ~ (comma ~ define_arguments)? | define_arguments }
+impl_define_arguments = { (self_kwd ~ (comma ~ define_arguments)?) | define_arguments }
 
 /* ** Functions ** */
 fn_call   =  { ident ~ lparen ~ call_arguments? ~ rparen }
 fn_return = _{ "->" ~ ty }
-fn_def    =  { fn_kwd ~ ident ~ lparen ~ define_arguments? ~ rparen ~ fn_return? ~ block }
+fn_def    =  { fn_kwd ~ ident ~ generic_args? ~ lparen ~ define_arguments? ~ rparen ~ fn_return? ~ where_clause? ~ block }
 
-impl_fn_def = { fn_kwd ~ ident ~ lparen ~ impl_define_arguments? ~ rparen ~ fn_return? ~ block }
+impl_fn_def = { fn_kwd ~ ident ~ generic_args? ~ lparen ~ impl_define_arguments? ~ rparen ~ fn_return? ~ where_clause? ~ block }
 closure     = { "|" ~ define_arguments? ~ "|" ~ fn_return? ~ block }
 
 return_def = { return_kwd ~ expr? }
 
 /* ** Blocks ** */
-in_block = { ((return_def | break_kwd | continue_kwd | var | stmt | expr) ~ semi) | if_def | while_def | for_def }
+in_block = { ((return_def | break_kwd | continue_kwd | var | stmt | expr) ~ semi) | if_def | while_def | for_def | match_def }
 block    = { lbrace ~ in_block* ~ rbrace }
 
 /* ** If Statements ** */
@@ -180,8 +178,10 @@ while_def = { while_kwd ~ expr ~ block }
 for_def = { for_kwd ~ define_argument ~ in_kwd ~ expr ~ block }
 
 /* ** Structs ** */
-struct_def = { struct_kwd ~ ident ~ generic_args? ~ where_clause? ~ lbrace ~ define_arguments ~ rbrace }
-struct     = { ident ~ lbrace ~ call_arguments ~ rbrace }
+struct_def  = { struct_kwd ~ ident ~ generic_args? ~ where_clause? ~ lbrace ~ define_arguments ~ rbrace }
+struct_arg  = { ident ~ colon ~ expr }
+struct_args = { struct_arg ~ (comma ~ struct_arg)* }
+struct      = { ident ~ lbrace ~ struct_args ~ rbrace }
 
 /* ** Impl ** */
 impl_def = { impl_kwd ~ ident ~ lbrace ~ (impl_fn_def)* ~ rbrace }
@@ -195,6 +195,12 @@ enum_variant =  { ident ~ (lparen ~ ty ~ rparen)? }
 generic_args = { "<" ~ ident ~ (comma ~ ident)* ~ ">" }
 where_unit   = { (ident ~ (assign | colon) ~ ident) }
 where_clause = { where_kwd ~ where_unit ~ (comma ~ where_unit)* }
+
+/* ** Match ** */
+match_def       =  { match_kwd ~ expr ~ lbrace ~ match_arm ~ (comma ~ match_arm)* ~ (comma ~ match_arm_final)? ~ rbrace }
+match_arm       =  { match_ident ~ "=>" ~ block }
+match_arm_final = _{ "_" ~ "=>" ~ block }
+match_ident     = _{ ident ~ dblcln ~ ident ~ (lparen ~ ident ~ colon ~ ty ~ rparen)? }
 
 /* ** Program ** */
 program = { SOI ~ (struct_def | impl_def | fn_def | enum_def | (var ~ semi))* ~ EOI }

@@ -5,6 +5,13 @@
 	"version": "0.2.0",
 	"configurations": [
 		{
+			"type": "java",
+			"name": "JasmineProgram",
+			"request": "launch",
+			"mainClass": "JasmineProgram",
+			"projectName": "jasmine_fafc3a5f"
+		},
+		{
 			"type": "lldb",
 			"request": "launch",
 			"name": "Debug executable 'jasmine'",

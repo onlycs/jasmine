@@ -38,40 +38,143 @@ impl Parse for FullExpr {
     }
 }
 
+impl Rewrite for FullExpr {
+    fn rewrite(&self) -> String {
+        format!(
+            "({} {} {})",
+            self.lhs.rewrite(),
+            self.op.rewrite(),
+            self.rhs.rewrite()
+        )
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
-pub enum BaseExprType {
-    FnCall {
+pub enum AfterDotExprType {
+    ObjectFnCall {
         data: FunctionCall,
-        after_dot: Option<Box<BaseExprType>>,
+        after_dot: Option<Box<AfterDotExprType>>,
     },
-    Ident {
+    ObjectProp {
         data: String,
-        /// this can also be an Enum creation (with data)
-        static_fn: Option<FunctionCall>,
-        /// Enumw without data
-        unit_enum: Option<String>,
-        after_dot: Option<Box<BaseExprType>>,
+        after_dot: Option<Box<AfterDotExprType>>,
     },
 }
 
-impl BaseExprType {
-    pub fn push(&mut self, next: BaseExprType) {
+impl AfterDotExprType {
+    pub fn push(&mut self, next: AfterDotExprType) {
         let new = Box::new(next);
 
         match self {
-            BaseExprType::FnCall { after_dot, .. } => {
+            AfterDotExprType::ObjectFnCall { after_dot, .. } => {
                 if let Some(after_dot) = after_dot {
                     after_dot.push(*new);
                 } else {
                     *after_dot = Some(new);
                 }
             }
-            BaseExprType::Ident { after_dot, .. } => {
+            AfterDotExprType::ObjectProp { after_dot, .. } => {
                 if let Some(after_dot) = after_dot {
                     after_dot.push(*new);
                 } else {
                     *after_dot = Some(new);
                 }
+            }
+        }
+    }
+
+    pub fn rewrite(&self) -> String {
+        match self {
+            AfterDotExprType::ObjectFnCall {
+                data, after_dot, ..
+            } => {
+                if let Some(after_dot) = after_dot {
+                    format!("{}.{}", data.rewrite(), after_dot.rewrite())
+                } else {
+                    data.rewrite()
+                }
+            }
+            AfterDotExprType::ObjectProp {
+                data, after_dot, ..
+            } => {
+                if let Some(after_dot) = after_dot {
+                    format!("{}.{}", rewrite_ident(data), after_dot.rewrite())
+                } else {
+                    rewrite_ident(data)
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum BaseExprType {
+    FnCall {
+        data: FunctionCall,
+        after_dot: Option<AfterDotExprType>,
+    },
+    Ident {
+        data: String,
+        /// this can also be an Enum creation (with data), but enums are made into objects anyways so it doesnt matter
+        static_fn: Option<FunctionCall>,
+        /// Enum without data
+        unit_enum: Option<String>,
+        after_dot: Option<AfterDotExprType>,
+    },
+}
+
+impl BaseExprType {
+    pub fn push(&mut self, next: AfterDotExprType) {
+        match self {
+            BaseExprType::FnCall { after_dot, .. } => {
+                if let Some(after_dot) = after_dot {
+                    after_dot.push(next);
+                } else {
+                    *after_dot = Some(next);
+                }
+            }
+            BaseExprType::Ident { after_dot, .. } => {
+                if let Some(after_dot) = after_dot {
+                    after_dot.push(next);
+                } else {
+                    *after_dot = Some(next);
+                }
+            }
+        }
+    }
+
+    pub fn rewrite(&self) -> String {
+        match self {
+            BaseExprType::FnCall { data, after_dot } => {
+                let mut formatted = data.rewrite();
+
+                if let Some(after_dot) = after_dot {
+                    formatted.push_str(&format!(".{}", after_dot.rewrite()));
+                }
+
+                formatted
+            }
+            BaseExprType::Ident {
+                data,
+                after_dot,
+                static_fn,
+                unit_enum,
+            } => {
+                let mut formatted = rewrite_ident(data);
+
+                if let Some(static_fn) = static_fn {
+                    formatted.push_str(&format!(".{}", static_fn.rewrite()))
+                }
+
+                if let Some(unit_enum) = unit_enum {
+                    formatted.push_str(&format!(".{}()", unit_enum)) // fn call under the hood
+                }
+
+                if let Some(after_dot) = after_dot {
+                    formatted.push_str(&format!(".{}", after_dot.rewrite()));
+                }
+
+                formatted
             }
         }
     }
@@ -89,8 +192,6 @@ impl Parse for BaseExpr {
         let mut kind = None;
 
         for rule in pair.into_inner() {
-            println!("Parsing {:?}: {}", rule.as_rule(), rule.as_str());
-
             match rule.as_rule() {
                 Rule::one_input_op => operators.push(UnaryOperator::parse(rule)?),
                 Rule::ident => {
@@ -139,7 +240,7 @@ impl Parse for BaseExpr {
 
                     let fn_rule = rule.into_inner().find(|n| n.as_rule() == Rule::fn_call)?;
 
-                    base_expr.push(BaseExprType::FnCall {
+                    base_expr.push(AfterDotExprType::ObjectFnCall {
                         data: FunctionCall::parse(fn_rule)?,
                         after_dot: None,
                     });
@@ -151,10 +252,8 @@ impl Parse for BaseExpr {
 
                     let ident = rule.into_inner().find(|n| n.as_rule() == Rule::ident)?;
 
-                    base_expr.push(BaseExprType::Ident {
+                    base_expr.push(AfterDotExprType::ObjectProp {
                         data: ident.as_str().to_string(),
-                        static_fn: None,
-                        unit_enum: None,
                         after_dot: None,
                     });
                 }
@@ -170,6 +269,20 @@ impl Parse for BaseExpr {
     }
 }
 
+impl BaseExpr {
+    pub fn rewrite(&self) -> String {
+        let mut rewritten = "".to_string();
+
+        for op in self.operators.iter() {
+            rewritten.push_str(&op.rewrite());
+        }
+
+        rewritten.push_str(&self.kind.rewrite());
+
+        rewritten
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum Expression {
     Base(BaseExpr),
@@ -179,7 +292,10 @@ pub enum Expression {
 
 impl Parse for Expression {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        let inner_pr = pair.into_inner().next()?;
+        let inner_pr = pair
+            .into_inner()
+            .filter(|r| r.as_rule() != Rule::lparen)
+            .next()?;
 
         match inner_pr.as_rule() {
             Rule::base_expr => Some(Expression::Base(BaseExpr::parse(inner_pr)?)),
@@ -187,5 +303,19 @@ impl Parse for Expression {
             Rule::definition => Some(Expression::Definition(Definition::parse(inner_pr)?)),
             _ => None,
         }
+    }
+}
+
+impl Expression {
+    pub fn rewrite(&self) -> String {
+        match self {
+            Expression::Base(expr) => expr.rewrite(),
+            Expression::Definition(def) => def.rewrite(),
+            Expression::Full(expr) => expr.rewrite(),
+        }
+    }
+
+    pub fn rewrite_many(all: Vec<Self>, sep: &'static str) -> String {
+        all.iter().map(|e| e.rewrite()).join(sep)
     }
 }

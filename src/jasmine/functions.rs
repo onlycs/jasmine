@@ -6,6 +6,8 @@ pub struct Function {
     pub args: Vec<Arg>,
     pub body: Vec<BlockPart>,
     pub returns: Option<Type>,
+    pub generics: Option<GenericArguments>,
+    pub where_clause: Option<Vec<WhereUnit>>,
 }
 
 impl Parse for Function {
@@ -14,6 +16,8 @@ impl Parse for Function {
         let mut args = vec![];
         let mut body = vec![];
         let mut returns = None;
+        let mut generics = None;
+        let mut where_clause = None;
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
@@ -27,6 +31,10 @@ impl Parse for Function {
                 Rule::ty => {
                     returns = Some(Type::parse(rule)?);
                 }
+                Rule::generic_args => {
+                    generics = Some(GenericArguments::parse(rule)?);
+                }
+                Rule::where_clause => where_clause = Some(WhereUnit::parse_many(rule)?),
                 _ => {}
             }
         }
@@ -36,16 +44,36 @@ impl Parse for Function {
             args,
             body,
             returns,
+            generics,
+            where_clause,
         })
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ImplFnType {
-    Consume,
-    Ref,
-    MutRef,
-    Static,
+impl Function {
+    pub fn rewrite(&self) -> String {
+        let generics = self
+            .generics
+            .as_ref()
+            .map(|n| n.rewrite(self.where_clause.as_ref()))
+            .unwrap_or("".to_string());
+
+        format!(
+            "
+			public static {} {} {}({}) {{
+				{}
+			}}
+			",
+            generics,
+            self.returns
+                .as_ref()
+                .map(|n| n.rewrite())
+                .unwrap_or("void".to_string()),
+            rewrite_ident(&self.ident),
+            Arg::rewrite_many(self.args.clone(), ", "),
+            BlockPart::rewrite_many(self.body.clone(), "\n")
+        )
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -54,7 +82,9 @@ pub struct ImplFunction {
     pub args: Vec<Arg>,
     pub body: Vec<BlockPart>,
     pub returns: Option<Type>,
-    pub self_type: ImplFnType,
+    pub is_static: bool,
+    pub generics: Option<GenericArguments>,
+    pub where_clause: Option<Vec<WhereUnit>>,
 }
 
 impl Parse for ImplFunction {
@@ -63,7 +93,9 @@ impl Parse for ImplFunction {
         let mut args = vec![];
         let mut body = vec![];
         let mut returns = None;
-        let mut self_type = ImplFnType::Static;
+        let mut is_static = true;
+        let mut generics = None;
+        let mut where_clause = None;
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
@@ -74,14 +106,8 @@ impl Parse for ImplFunction {
                             Rule::define_arguments => {
                                 args = Arg::parse_many(arg_rule)?;
                             }
-                            Rule::borrow_kwd => {
-                                self_type = ImplFnType::Ref;
-                            }
-                            Rule::mut_kwd => {
-                                self_type = ImplFnType::MutRef;
-                            }
-                            Rule::self_kwd if self_type == ImplFnType::Static => {
-                                self_type = ImplFnType::Consume;
+                            Rule::self_kwd => {
+                                is_static = false;
                             }
                             _ => {}
                         }
@@ -93,6 +119,10 @@ impl Parse for ImplFunction {
                 Rule::ty => {
                     returns = Some(Type::parse(rule)?);
                 }
+                Rule::generic_args => {
+                    generics = Some(GenericArguments::parse(rule)?);
+                }
+                Rule::where_clause => where_clause = Some(WhereUnit::parse_many(rule)?),
                 _ => {}
             }
         }
@@ -102,8 +132,35 @@ impl Parse for ImplFunction {
             args,
             body,
             returns,
-            self_type,
+            is_static,
+            generics,
+            where_clause,
         })
+    }
+}
+
+impl ImplFunction {
+    pub fn rewrite(&self) -> String {
+        let args = Arg::rewrite_many(self.args.clone(), ", ");
+        let body = BlockPart::rewrite_many(self.body.clone(), "\n");
+        let generics = self
+            .generics
+            .as_ref()
+            .map(|n| n.rewrite(self.where_clause.as_ref()))
+            .unwrap_or("".to_string());
+
+        format!(
+            "public {} {} {} {}({}) {{\n{}\n}}",
+            if self.is_static { "static" } else { "" },
+            generics,
+            self.returns
+                .as_ref()
+                .map(|n| n.rewrite())
+                .unwrap_or("void".to_string()),
+            rewrite_ident(&self.ident),
+            args,
+            body
+        )
     }
 }
 
@@ -143,6 +200,15 @@ impl Parse for Closure {
     }
 }
 
+impl Closure {
+    pub fn rewrite(&self) -> String {
+        let args = Arg::rewrite_many(self.args.clone(), ", ");
+        let body = BlockPart::rewrite_many(self.body.clone(), "\n");
+
+        format!("({}) -> {{{}}}", args, body)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct FunctionCall {
     pub ident: String,
@@ -166,5 +232,24 @@ impl Parse for FunctionCall {
             ident: ident?,
             args,
         })
+    }
+}
+
+impl FunctionCall {
+    pub fn rewrite(&self) -> String {
+        if self.ident == "panic" {
+            return format!(
+                "throw new RuntimeException({})",
+                CallArg::rewrite_many(self.args.clone(), ", ")
+            );
+        }
+
+        let mut rewritten = format!("{}(", rewrite_ident(&self.ident));
+
+        rewritten.push_str(&CallArg::rewrite_many((&self.args).clone(), ", "));
+
+        rewritten.push(')');
+
+        rewritten
     }
 }

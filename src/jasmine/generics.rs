@@ -73,3 +73,36 @@ impl Parse for GenericArguments {
         Some(Self { args })
     }
 }
+
+impl GenericArguments {
+    pub fn rewrite(&self, where_clause: Option<&Vec<WhereUnit>>) -> String {
+        let mut rewritten = "".to_string();
+        rewritten.push('<');
+
+        for arg in self.clone().args {
+            rewritten.push_str(&arg);
+
+            if let Some(where_unit) = where_clause
+                .as_ref()
+                .map(|n| n.iter().find(|n| n.generic == arg))
+                .flatten()
+                .cloned()
+            {
+                match where_unit.kind {
+                    WhereType::Extends => rewritten.push_str(" extends "),
+                    WhereType::Implements => rewritten.push_str(" extends "),
+                }
+
+                rewritten.push_str(&where_unit.constraint);
+            }
+
+            rewritten.push(',')
+        }
+
+        rewritten.pop();
+
+        rewritten.push('>');
+
+        rewritten
+    }
+}

@@ -34,6 +34,18 @@ impl Parse for Variable {
     }
 }
 
+impl Variable {
+    pub fn rewrite(&self) -> String {
+        format!(
+            "{} {} {} = {}",
+            if !self.mutable { "final" } else { "" },
+            self.ty.rewrite(),
+            rewrite_ident(&self.ident),
+            self.expr.rewrite()
+        )
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefinitionType {
     Bool(bool),
@@ -42,13 +54,12 @@ pub enum DefinitionType {
     String(Vec<CharDecl>),
     Char(CharDecl),
     Array(Vec<Expression>),
-    StructDef(Structure),
+    Struct(CreateStructure),
     Closure(Closure),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Definition {
-    pub borrows: Vec<BorrowType>,
     pub kind: DefinitionType,
 }
 
@@ -57,10 +68,9 @@ impl Parse for Definition {
         let Some(rule) = pair.into_inner().nth(0) else { return None };
 
         let mut kind = None;
-        let mut borrows = vec![];
 
         match rule.as_rule() {
-            Rule::r#struct => kind = Some(DefinitionType::StructDef(Structure::parse(rule)?)),
+            Rule::r#struct => kind = Some(DefinitionType::Struct(CreateStructure::parse(rule)?)),
             Rule::float => {
                 let mut rule_str = rule.as_str();
 
@@ -101,18 +111,26 @@ impl Parse for Definition {
                 kind = Some(DefinitionType::Array(exprs))
             }
             Rule::closure => kind = Some(DefinitionType::Closure(Closure::parse(rule)?)),
-
-            Rule::borrow_kwd => borrows.push(BorrowType::Borrow),
-            Rule::mut_kwd => {
-                let len = borrows.len();
-                borrows[len - 1] = BorrowType::MutBorrow;
-            }
             _ => {}
         }
 
-        Some(Definition {
-            borrows,
-            kind: kind?,
-        })
+        Some(Definition { kind: kind? })
+    }
+}
+
+impl Definition {
+    pub fn rewrite(&self) -> String {
+        match &self.kind {
+            DefinitionType::Bool(b) => b.to_string(),
+            DefinitionType::Char(c) => c.rewrite(),
+            DefinitionType::Float(f) => format!("((double) {})", f.to_string()),
+            DefinitionType::String(s) => format!("\"{}\"", CharDecl::rewrite_many(s.clone(), "")),
+            DefinitionType::Int(i) => i.to_string(),
+            DefinitionType::Struct(def) => def.rewrite(),
+            DefinitionType::Array(arr) => {
+                format!("Vec.from({})", Expression::rewrite_many(arr.clone(), ", "))
+            }
+            DefinitionType::Closure(closure) => closure.rewrite(),
+        }
     }
 }

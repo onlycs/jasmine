@@ -66,3 +66,114 @@ impl Parse for Enumeration {
         })
     }
 }
+
+impl Enumeration {
+    pub fn rewrite_no_closing(&self) -> String {
+        let generics = match &self.generics {
+            Some(g) => g.rewrite(self.where_clause.as_ref()),
+            None => "".to_string(),
+        };
+
+        let fulltype = format!("{}{}", rewrite_ident(&self.ident), generics);
+
+        let mut rewritten = format!(
+            "
+			public static class {} {{
+			",
+            fulltype
+        );
+
+        for (idx, variant) in self.variants.iter().enumerate() {
+            rewritten.push_str(&format!(
+                "public static final int _{} = {};\n",
+                variant.ident,
+                idx + 1
+            ));
+        }
+
+        rewritten.push_str("int currentVariant;\n");
+
+        let mut variant_data = vec![];
+
+        for variant in self.variants.iter() {
+            if let Some(data) = &variant.data {
+                rewritten.push_str(&format!(
+                    "{} {}Data;\n",
+                    data.rewrite(),
+                    rewrite_ident(&variant.ident)
+                ));
+                variant_data.push((rewrite_ident(&variant.ident), data.clone()));
+            }
+        }
+
+        rewritten.push_str(&format!(
+            "
+			private {}(int _currentVariant{}) {{
+				this.currentVariant = _currentVariant;
+				{}
+			}}
+			",
+            self.ident,
+            format!(
+                ", {}",
+                variant_data
+                    .iter()
+                    .map(|(ident, ty)| format!("{} _{}Data", ty.rewrite(), ident))
+                    .join(", ")
+            ),
+            variant_data
+                .iter()
+                .map(|(ident, _)| format!("this.{}Data = _{}Data;", ident, ident))
+                .join("\n"),
+        ));
+
+        for variant in self.variants.iter() {
+            rewritten.push_str(&format!(
+                "
+				public static {generics} {fulltype} {}({}) {{
+					return new {fulltype}({}, {});
+				}}
+				",
+                variant.ident,
+                match &variant.data {
+                    Some(data) => format!("{} data", data.rewrite()),
+                    None => "".to_string(),
+                },
+                format!("_{}", variant.ident),
+                variant_data
+                    .iter()
+                    .map(|(ident, _)| {
+                        if ident == &variant.ident {
+                            "data".to_string()
+                        } else {
+                            "null".to_string()
+                        }
+                    })
+                    .join(", ")
+            ))
+        }
+
+        for (variant, data_ty) in variant_data {
+            rewritten.push_str(&format!(
+                "
+				public {} _getData_{}() {{
+					return {}Data;
+				}}
+				",
+                data_ty.rewrite(),
+                variant,
+                variant
+            ));
+        }
+
+        rewritten.push_str(
+            "
+			public boolean is(int variant) {
+				return currentVariant == variant;
+			}
+			",
+        );
+
+        rewritten
+    }
+}

@@ -2,10 +2,17 @@
 name = "jasmine"
 version = "0.1.0"
 edition = "2021"
+authors = ["OnlyCS"]
+description = "A Rust-like programming langauge that transpiles to Java"
+readme = "https://github.com/OnlyCS/jasmine/tree/main/README.md"
+license = "AGPL-3.0"
+
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 anyhow = "1.0.72"
+clap = { version = "4.4.0", features = ["derive"] }
+itertools = "0.11.0"
 pest = "2.7.2"
 pest_derive = "2.7.2"

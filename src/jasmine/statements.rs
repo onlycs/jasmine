@@ -44,3 +44,21 @@ impl Parse for Statement {
         })
     }
 }
+
+impl Statement {
+    pub fn rewrite(&self) -> String {
+        format!(
+            "{} {} {}",
+            self.ident,
+            match self.assign_type {
+                AssignType::Assign => "=",
+                AssignType::AddAssign => "+=",
+                AssignType::SubAssign => "-=",
+                AssignType::MulAssign => "*=",
+                AssignType::DivAssign => "/=",
+                AssignType::ModAssign => "%=",
+            },
+            self.expr.rewrite()
+        )
+    }
+}

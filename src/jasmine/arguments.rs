@@ -42,6 +42,16 @@ impl ParseMany for Arg {
     }
 }
 
+impl Arg {
+    pub fn rewrite(&self) -> String {
+        format!("{} {}", self.ty.rewrite(), rewrite_ident(&self.ident))
+    }
+
+    pub fn rewrite_many(args: Vec<Arg>, sep: &'static str) -> String {
+        args.iter().map(|n| n.rewrite()).join(sep)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct CallArg {
     pub expr: Expression,
@@ -75,5 +85,15 @@ impl ParseMany for CallArg {
         }
 
         Some(args)
+    }
+}
+
+impl CallArg {
+    pub fn rewrite(&self) -> String {
+        self.expr.rewrite()
+    }
+
+    pub fn rewrite_many(args: Vec<CallArg>, sep: &'static str) -> String {
+        args.iter().map(|n| n.rewrite()).join(sep)
     }
 }

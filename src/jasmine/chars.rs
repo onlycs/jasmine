@@ -26,7 +26,7 @@ impl Parse for Escape {
                 Rule::escape_predefined if rule_str == "\"" => Some(Escape::DoubleQuote),
                 Rule::escape_predefined if rule_str == "0" => Some(Escape::NullByte),
                 Rule::unicode_escape => {
-                    // in format u{XXXXXX} (4-6 digits)
+                    // in format u{XXXX} (4 digits)
                     let mut chars = rule_str.chars();
 
                     // remove first 2
@@ -44,6 +44,21 @@ impl Parse for Escape {
             }
         } else {
             None
+        }
+    }
+}
+
+impl Escape {
+    pub fn rewrite(&self) -> String {
+        match self {
+            Escape::Newline => "\\n".to_string(),
+            Escape::Tab => "\\t".to_string(),
+            Escape::CarriageReturn => "\\r".to_string(),
+            Escape::Backslash => "\\\\".to_string(),
+            Escape::SingleQuote => "\\'".to_string(),
+            Escape::DoubleQuote => "\\\"".to_string(),
+            Escape::NullByte => "\\0".to_string(),
+            Escape::Unicode(digits) => format!("\\u{}", digits),
         }
     }
 }
@@ -76,5 +91,18 @@ impl ParseMany for CharDecl {
         }
 
         Some(chars)
+    }
+}
+
+impl CharDecl {
+    pub fn rewrite(&self) -> String {
+        match self {
+            CharDecl::RawChar(ch) => ch.to_string(),
+            CharDecl::EscapeChar(esc) => esc.rewrite(),
+        }
+    }
+
+    pub fn rewrite_many(all: Vec<CharDecl>, sep: &'static str) -> String {
+        all.iter().map(|c| c.rewrite()).join(sep)
     }
 }

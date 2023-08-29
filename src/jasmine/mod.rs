@@ -51,8 +51,14 @@ impl ParseMany for JasmineProgramComponent {
     fn parse_many(pair: Pair<'_, Rule>) -> Option<Vec<Self>> {
         let mut components = vec![];
         for inner_pair in pair.into_inner() {
-            if !vec![Rule::struct_def, Rule::impl_def, Rule::fn_def, Rule::var]
-                .contains(&inner_pair.as_rule())
+            if !vec![
+                Rule::struct_def,
+                Rule::impl_def,
+                Rule::fn_def,
+                Rule::var,
+                Rule::enum_def,
+            ]
+            .contains(&inner_pair.as_rule())
             {
                 continue;
             }

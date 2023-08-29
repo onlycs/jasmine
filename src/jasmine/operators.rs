@@ -16,6 +16,16 @@ impl Parse for UnaryOperator {
     }
 }
 
+impl UnaryOperator {
+    pub fn rewrite(&self) -> String {
+        match self {
+            UnaryOperator::Neg => "-",
+            UnaryOperator::Not => "!",
+        }
+        .to_string()
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum BinaryOperator {
     Add,
@@ -25,7 +35,6 @@ pub enum BinaryOperator {
     Mod,
     And,
     Or,
-    Not,
     Eq,
     Neq,
     Lt,
@@ -44,7 +53,6 @@ impl Parse for BinaryOperator {
             Rule::mod_op => Some(BinaryOperator::Mod),
             Rule::and_op => Some(BinaryOperator::And),
             Rule::or_op => Some(BinaryOperator::Or),
-            Rule::not_op => Some(BinaryOperator::Not),
             Rule::eq_op => Some(BinaryOperator::Eq),
             Rule::neq_op => Some(BinaryOperator::Neq),
             Rule::lt_op => Some(BinaryOperator::Lt),
@@ -53,5 +61,26 @@ impl Parse for BinaryOperator {
             Rule::gte_op => Some(BinaryOperator::Gte),
             _ => None,
         }
+    }
+}
+
+impl Rewrite for BinaryOperator {
+    fn rewrite(&self) -> String {
+        match self {
+            BinaryOperator::Add => "+",
+            BinaryOperator::Sub => "-",
+            BinaryOperator::Mul => "*",
+            BinaryOperator::Div => "/",
+            BinaryOperator::Mod => "%",
+            BinaryOperator::And => "&&",
+            BinaryOperator::Or => "||",
+            BinaryOperator::Eq => "==",
+            BinaryOperator::Neq => "!=",
+            BinaryOperator::Lt => "<",
+            BinaryOperator::Gt => ">",
+            BinaryOperator::Lte => "<=",
+            BinaryOperator::Gte => ">=",
+        }
+        .to_string()
     }
 }

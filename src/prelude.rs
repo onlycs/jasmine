@@ -9,3 +9,11 @@ pub trait Parse: Sized {
 pub trait ParseMany: Sized {
     fn parse_many(pair: Pair<'_, Rule>) -> Option<Vec<Self>>;
 }
+
+pub trait Rewrite {
+    fn rewrite(&self) -> String;
+}
+
+pub(crate) use crate::rewrite;
+pub use itertools::Itertools;
+pub use rewrite::rewrite_ident;
