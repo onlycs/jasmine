@@ -171,9 +171,11 @@ in_block = { ((return_def | break_kwd | continue_kwd | var | stmt | expr) ~ semi
 block    = { lbrace ~ in_block* ~ rbrace }
 
 /* ** If Statements ** */
-if_def      = { if_kwd ~ expr ~ block ~ else_if_def* ~ else_def? }
-else_if_def = { else_kwd ~ if_kwd ~ expr ~ block }
+if_def      = { if_kwd ~ if_expr ~ block ~ else_if_def* ~ else_def? }
+else_if_def = { else_kwd ~ if_kwd ~ if_expr ~ block }
 else_def    = { else_kwd ~ block }
+if_expr     = { if_let | expr }
+if_let      = { let_kwd ~ ident ~ dblcln ~ ident ~ lparen ~ ident ~ colon ~ ty ~ rparen ~ assign ~ expr }
 
 /* ** While Statements ** */
 while_def = { while_kwd ~ expr ~ block }
