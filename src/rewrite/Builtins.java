@@ -425,6 +425,28 @@ public class Builtins {
 		public Stream<T> stream() {
 			return this.inner.stream();
 		}
+
+		public Option<T> find(Closure_Generic_RetBoolean<T> function) {
+			for (T i : this) {
+				if (function.call(i)) {
+					return Option.Some(i);
+				}
+			}
+
+			return Option.None();
+		}
+
+		public Option<Integer> findIndex(Closure_Generic_RetBoolean<T> function) {
+			for (Integer idx : new Range(0, this.len(), false)) {
+				T item = this.get(idx).unwrap();
+
+				if (function.call(item)) {
+					return Option.Some(idx);
+				}
+			}
+
+			return Option.None();
+		}
 	}
 
 	public static class Range implements Iterable<Integer> {

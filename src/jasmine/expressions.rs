@@ -59,6 +59,10 @@ pub enum AfterDotExprType {
         data: String,
         after_dot: Option<Box<AfterDotExprType>>,
     },
+    ArrayIdx {
+        data: Expression,
+        after_dot: Option<Box<AfterDotExprType>>,
+    },
 }
 
 impl AfterDotExprType {
@@ -74,6 +78,13 @@ impl AfterDotExprType {
                 }
             }
             AfterDotExprType::ObjectProp { after_dot, .. } => {
+                if let Some(after_dot) = after_dot {
+                    after_dot.push(*new);
+                } else {
+                    *after_dot = Some(new);
+                }
+            }
+            AfterDotExprType::ArrayIdx { after_dot, .. } => {
                 if let Some(after_dot) = after_dot {
                     after_dot.push(*new);
                 } else {
@@ -103,6 +114,17 @@ impl AfterDotExprType {
                     rewrite_ident(data)
                 }
             }
+            AfterDotExprType::ArrayIdx { data, after_dot } => {
+                if let Some(after_dot) = after_dot {
+                    format!(
+                        "get((Integer) {}).unwrap().{}",
+                        data.rewrite(),
+                        after_dot.rewrite()
+                    )
+                } else {
+                    format!("get((Integer) {}).unwrap()", data.rewrite())
+                }
+            }
         }
     }
 }
@@ -111,7 +133,7 @@ impl AfterDotExprType {
 pub enum BaseExprType {
     FnCall {
         data: FunctionCall,
-        after_dot: Option<AfterDotExprType>,
+        after_dot: Option<Box<AfterDotExprType>>,
     },
     Ident {
         data: String,
@@ -119,7 +141,7 @@ pub enum BaseExprType {
         static_fn: Option<FunctionCall>,
         /// Enum without data
         unit_enum: Option<String>,
-        after_dot: Option<AfterDotExprType>,
+        after_dot: Option<Box<AfterDotExprType>>,
     },
 }
 
@@ -130,14 +152,14 @@ impl BaseExprType {
                 if let Some(after_dot) = after_dot {
                     after_dot.push(next);
                 } else {
-                    *after_dot = Some(next);
+                    *after_dot = Some(Box::new(next));
                 }
             }
             BaseExprType::Ident { after_dot, .. } => {
                 if let Some(after_dot) = after_dot {
                     after_dot.push(next);
                 } else {
-                    *after_dot = Some(next);
+                    *after_dot = Some(Box::new(next));
                 }
             }
         }
@@ -183,7 +205,7 @@ impl BaseExprType {
 #[derive(Debug, Clone, PartialEq)]
 pub struct BaseExpr {
     pub operators: Vec<UnaryOperator>,
-    pub kind: BaseExprType,
+    pub kind: Box<BaseExprType>,
 }
 
 impl Parse for BaseExpr {
@@ -257,6 +279,18 @@ impl Parse for BaseExpr {
                         after_dot: None,
                     });
                 }
+                Rule::array_idx => {
+                    let Some(base_expr) = &mut kind else {
+						return None;
+					};
+
+                    let expr = rule.into_inner().find(|n| n.as_rule() == Rule::expr)?;
+
+                    base_expr.push(AfterDotExprType::ArrayIdx {
+                        data: Expression::parse(expr)?,
+                        after_dot: None,
+                    });
+                }
                 Rule::base_expr => return Some(BaseExpr::parse(rule)?),
                 _ => {}
             }
@@ -264,7 +298,7 @@ impl Parse for BaseExpr {
 
         Some(BaseExpr {
             operators,
-            kind: kind?,
+            kind: kind.map(Box::new)?,
         })
     }
 }

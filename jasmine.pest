@@ -120,9 +120,10 @@ static_fn   = { dblcln ~ fn_call }
 unit_enum   = { dblcln ~ ident }
 object_fn   = { dot ~ fn_call }
 object_prop = { dot ~ ident }
+array_idx   = { lbrack ~ expr ~ rbrack }
 
 base_expr = {
-    (one_input_op* ~ ((fn_call | (ident ~ (static_fn | unit_enum)?)) ~ (object_fn | object_prop)*))
+    (one_input_op* ~ ((fn_call | (ident ~ (static_fn | unit_enum)?)) ~ (object_fn | object_prop | array_idx)*))
   | (lparen ~ base_expr ~ rparen)
 }
 
