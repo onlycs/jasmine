@@ -36,7 +36,7 @@ fn main() {
 
 ### Fibonacci
 ```
-fn fib(n: int) {
+fn fib(n: int) -> int {
 	if n == 0 {
 		return 0;
 	} else if n == 1 {
@@ -47,6 +47,6 @@ fn fib(n: int) {
 }
 
 fn main() {
-	println(fib(10));
+	println("{}", fib(10));
 }
 ```

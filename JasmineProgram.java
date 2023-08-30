@@ -1,8 +1,8 @@
+
 import java.util.*;
 import java.util.stream.*;
 
-public class Builtins {
-	// JASMINE_BUILTINS_START
+public class JasmineProgram {
 
 	public static void print(String formatstr, Object... args) {
 		System.out.printf(formatstr.replace("{}", "%s"), args);
@@ -472,5 +472,9 @@ public class Builtins {
 		Integer call(Arg0 arg0);
 	}
 
-	// JASMINE_BUILTINS_END
+	public static void main(String[] args) {
+		for (Integer i : new Range(0, 10, true)) {
+			println("{}", i);
+		}
+	}
 }

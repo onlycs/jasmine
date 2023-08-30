@@ -32,7 +32,10 @@ string = ${ "\"" ~ ((!("\"") ~ raw_char) | escape)* ~ "\"" }
 /* Arrays */
 array = { lbrack ~ (expr ~ (comma ~ expr)*)? ~ rbrack }
 
-definition = { (array | string | struct | float | int | bool | char | closure) }
+range_incl = { "=" }
+range      = { int ~ ".." ~ range_incl? ~ int }
+
+definition = { range | array | string | struct | float | int | bool | char | closure }
 
 int_ty     = { "int" }
 float_ty   = { "float" }
@@ -42,9 +45,10 @@ string_ty  = { "string" }
 closure_ty = { "Closure<" ~ lparen ~ (generic_kwd? ~ ty ~ (comma ~ generic_kwd? ~ ty)*)? ~ rparen ~ ("," ~ generic_kwd? ~ ty)? ~ ">" }
 ident_ty   = { ident }
 array_ty   = { (not_array_ty | (lparen ~ not_array_ty ~ rparen)) ~ (lbrack ~ rbrack)+ }
+range_ty   = { "range" }
 generic_ty = { not_generic_ty ~ "<" ~ ty ~ (comma ~ ty)* ~ ">" }
 
-not_array_ty   = _{ (int_ty | float_ty | bool_ty | char_ty | string_ty | closure_ty | ident_ty) }
+not_array_ty   = _{ (int_ty | float_ty | bool_ty | char_ty | range_ty | string_ty | closure_ty | ident_ty) }
 not_generic_ty = _{ array_ty | not_array_ty }
 ty             =  { generic_ty | not_generic_ty }
 

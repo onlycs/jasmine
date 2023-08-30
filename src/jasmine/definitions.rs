@@ -47,6 +47,52 @@ impl Variable {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Range {
+    pub begin: i64,
+    pub end: i64,
+    pub inclusive: bool,
+}
+
+impl Parse for Range {
+    fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
+        let mut begin = None;
+        let mut end = None;
+        let mut inclusive = false;
+
+        for rule in pair.into_inner() {
+            match rule.as_rule() {
+                Rule::int => {
+                    if begin.is_none() {
+                        begin = Some(rule.as_str().trim().parse::<i64>().ok()?);
+                    } else {
+                        end = Some(rule.as_str().trim().parse::<i64>().ok()?);
+                    }
+                }
+                Rule::range_incl => inclusive = true,
+                _ => {}
+            }
+        }
+
+        Some(Self {
+            begin: begin?,
+            end: end?,
+            inclusive,
+        })
+    }
+}
+
+impl Range {
+    pub fn rewrite(&self) -> String {
+        format!(
+            "new Range({}, {}, {})",
+            self.begin,
+            self.end,
+            if self.inclusive { "true" } else { "false" }
+        )
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum DefinitionType {
     Bool(bool),
     Int(i64),
@@ -56,6 +102,7 @@ pub enum DefinitionType {
     Array(Vec<Expression>),
     Struct(CreateStructure),
     Closure(Closure),
+    Range(Range),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -111,6 +158,7 @@ impl Parse for Definition {
                 kind = Some(DefinitionType::Array(exprs))
             }
             Rule::closure => kind = Some(DefinitionType::Closure(Closure::parse(rule)?)),
+            Rule::range => kind = Some(DefinitionType::Range(Range::parse(rule)?)),
             _ => {}
         }
 
@@ -131,6 +179,7 @@ impl Definition {
                 format!("Vec.from({})", Expression::rewrite_many(arr.clone(), ", "))
             }
             DefinitionType::Closure(closure) => closure.rewrite(),
+            DefinitionType::Range(range) => range.rewrite(),
         }
     }
 }
