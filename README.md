@@ -5,8 +5,22 @@ I decided to make my own programming language that compiles to Java source code.
 
 ## Features
 
-- [x] Pretty much everything
-- [] except for indexing arrays
+- [x] Functions
+- [x] Loops
+- [x] Variables
+- [x] Expressions
+- [x] Statements
+- [x] Structures
+- [x] Functions on structures (impls)
+- [] Traits (interfaces)
+- [x] Enums
+- [x] Auto-Expansion of `fn main()` to `public static void main(String[] args)`
+- [x] Math
+- [x] If-let statements (for enums only)
+- [x] Match statements (for enums only)
+- [x] Nice builtins
+- [] Type casting (not planned)
+- [x] Idk what else should be here, but probably, yes!
 
 ## Usage
 ```
