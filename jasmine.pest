@@ -132,7 +132,7 @@ op_expr = { op_expr_recurse ~ (two_input_op ~ op_expr_recurse)+ }
 op_expr_paren   = _{ lparen ~ op_expr ~ rparen }
 op_expr_recurse =  { op_expr_paren | base_expr | definition }
 
-expr = { definition | op_expr | base_expr }
+expr = { op_expr | definition | base_expr }
 
 /* ** Assign ** */
 assign     = { "=" }

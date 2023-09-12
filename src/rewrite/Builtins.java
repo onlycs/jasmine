@@ -460,6 +460,25 @@ public class Builtins {
 			this.inclusive = inclusive;
 		}
 
+		public Iterable<Integer> rev() {
+			return new Iterable<Integer>() {
+				public Iterator<Integer> iterator() {
+					return new Iterator<Integer>() {
+						int current = inclusive ? end : end - 1;
+
+						public boolean hasNext() {
+							return current >= start;
+						}
+
+						public Integer next() {
+							int val = --current;
+							return val;
+						}
+					};
+				}
+			};
+		}
+
 		public Iterator<Integer> iterator() {
 			return new Iterator<Integer>() {
 				int current = start;
