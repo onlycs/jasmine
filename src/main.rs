@@ -16,29 +16,23 @@ use std::{fs::File, io::Write, path::PathBuf, process::Command};
 
 fn main() -> Result<()> {
     let args = args::JasmineCli::parse();
-    let ast = parser::parse(PathBuf::new().join(args.input))?;
+    let ast = parser::parse(PathBuf::new().join(&args.input.first().unwrap()))?;
 
-    if args.skip_rewrite {
-        let str_fmt = format!("{:?}", ast);
+    let input = &args
+        .input
+        .first()
+        .unwrap()
+        .split('.')
+        .next()
+        .unwrap()
+        .to_string();
 
-        if args.save {
-            let mut file =
-                File::create(PathBuf::new().join(format!("{}.jasmine_ast", args.program_name)))?;
-            writeln!(&mut file, "{str_fmt}")?;
-        } else {
-            println!("{str_fmt}");
-        }
-    } else {
-        let file_str = rewrite::rewrite(ast, &args.program_name);
+    let input_first_upper = input.chars().next().unwrap().to_uppercase().to_string() + &input[1..];
 
-        if args.save {
-            let mut file =
-                File::create(PathBuf::new().join(format!("{}.java", args.program_name)))?;
-            writeln!(&mut file, "{file_str}")?;
-        } else {
-            println!("{file_str}");
-        }
-    }
+    let mut f = File::create(PathBuf::new().join(format!("{}.java", &input_first_upper)))?;
+    let r = rewrite::rewrite(ast, &input_first_upper);
+
+    writeln!(f, "{}", r)?;
 
     Ok(())
 }

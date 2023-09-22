@@ -99,7 +99,7 @@ gt_op  = { ">" }
 lte_op = { "<=" }
 gte_op = { ">=" }
 
-two_input_op = { add_op | sub_op | mul_op | div_op | mod_op | and_op | or_op | eq_op | neq_op | gt_op | lt_op | gte_op | lte_op }
+two_input_op = { gte_op | lte_op | add_op | sub_op | mul_op | div_op | mod_op | and_op | or_op | eq_op | neq_op | gt_op | lt_op }
 one_input_op = { not_op | neg_op }
 
 /* ** Grammar ** */

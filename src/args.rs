@@ -9,16 +9,6 @@ use clap::Parser;
 )]
 pub struct JasmineCli {
     #[arg(
-        short = 'n',
-        long,
-        value_name = "name",
-        default_value = "JasmineProgram",
-        help = "Java class name",
-        long_help = "The name of the program. Will also set filename if save is enabled"
-    )]
-    pub program_name: String,
-
-    #[arg(
         short = 'r',
         long,
         help = "Just print (or save) the AST",
@@ -27,14 +17,10 @@ pub struct JasmineCli {
     pub skip_rewrite: bool,
 
     #[arg(
-        short = 'i',
-        long,
+        trailing_var_arg = true,
         help = "Input file",
         long_help = "The input file to compile.",
-        default_value = "program.jasmine"
+        required = true
     )]
-    pub input: String,
-
-    #[arg(short, long, help = "Save the file")]
-    pub save: bool,
+    pub input: Vec<String>,
 }
