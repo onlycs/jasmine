@@ -96,13 +96,19 @@ impl ParseMany for CharDecl {
 
 impl CharDecl {
     pub fn rewrite(&self) -> String {
-        match self {
-            CharDecl::RawChar(ch) => ch.to_string(),
-            CharDecl::EscapeChar(esc) => esc.rewrite(),
-        }
+        format!(
+            "'{}'",
+            match self {
+                CharDecl::RawChar(ch) => ch.to_string(),
+                CharDecl::EscapeChar(esc) => esc.rewrite(),
+            }
+        )
     }
 
     pub fn rewrite_many(all: Vec<CharDecl>, sep: &'static str) -> String {
-        all.iter().map(|c| c.rewrite()).join(sep)
+        all.iter()
+            .map(|c| c.rewrite().trim_start_matches("'").to_string())
+            .map(|c| c.trim_end_matches("'").to_string())
+            .join(sep)
     }
 }

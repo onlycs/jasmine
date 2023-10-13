@@ -33,7 +33,7 @@ string = ${ "\"" ~ ((!("\"") ~ raw_char) | escape)* ~ "\"" }
 array = { lbrack ~ (expr ~ (comma ~ expr)*)? ~ rbrack }
 
 range_incl = { "=" }
-range      = { int ~ ".." ~ range_incl? ~ int }
+range      = { int ~ ".." ~ range_incl? ~ expr }
 
 definition = { range | array | string | struct | float | int | bool | char | closure }
 

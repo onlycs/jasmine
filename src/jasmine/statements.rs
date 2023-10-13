@@ -25,7 +25,7 @@ impl Parse for Statement {
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
-                Rule::ident => ident = Some(rule.as_str().to_string()),
+                Rule::ident => ident = Some(rewrite_ident(rule.as_str().to_string())),
                 Rule::assign => assign_type = Some(AssignType::Assign),
                 Rule::add_assign => assign_type = Some(AssignType::AddAssign),
                 Rule::sub_assign => assign_type = Some(AssignType::SubAssign),

@@ -6,6 +6,27 @@
 	"configurations": [
 		{
 			"type": "java",
+			"name": "Program08",
+			"request": "launch",
+			"mainClass": "Program08",
+			"projectName": "jasmine-stable_99842269"
+		},
+		{
+			"type": "java",
+			"name": "Program07",
+			"request": "launch",
+			"mainClass": "Program07",
+			"projectName": "jasmine-stable_99842269"
+		},
+		{
+			"type": "java",
+			"name": "Program06",
+			"request": "launch",
+			"mainClass": "Program06",
+			"projectName": "jasmine-stable_99842269"
+		},
+		{
+			"type": "java",
 			"name": "Program05",
 			"request": "launch",
 			"mainClass": "Program05",

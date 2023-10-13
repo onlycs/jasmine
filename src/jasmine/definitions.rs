@@ -49,7 +49,7 @@ impl Variable {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Range {
     pub begin: i64,
-    pub end: i64,
+    pub end: Box<Expression>,
     pub inclusive: bool,
 }
 
@@ -61,13 +61,8 @@ impl Parse for Range {
 
         for rule in pair.into_inner() {
             match rule.as_rule() {
-                Rule::int => {
-                    if begin.is_none() {
-                        begin = Some(rule.as_str().trim().parse::<i64>().ok()?);
-                    } else {
-                        end = Some(rule.as_str().trim().parse::<i64>().ok()?);
-                    }
-                }
+                Rule::int if begin.is_none() => begin = Some(rule.as_str().parse::<i64>().ok()?),
+                Rule::expr => end = Some(Box::new(Expression::parse(rule)?)),
                 Rule::range_incl => inclusive = true,
                 _ => {}
             }
@@ -86,7 +81,7 @@ impl Range {
         format!(
             "new Range({}, {}, {})",
             self.begin,
-            self.end,
+            self.end.rewrite(),
             if self.inclusive { "true" } else { "false" }
         )
     }
@@ -112,7 +107,9 @@ pub struct Definition {
 
 impl Parse for Definition {
     fn parse(pair: Pair<'_, Rule>) -> Option<Self> {
-        let Some(rule) = pair.into_inner().nth(0) else { return None };
+        let Some(rule) = pair.into_inner().nth(0) else {
+            return None;
+        };
 
         let mut kind = None;
 
@@ -139,7 +136,9 @@ impl Parse for Definition {
             Rule::bool => kind = Some(DefinitionType::Bool(rule.as_str().parse::<bool>().ok()?)),
             Rule::string => kind = Some(DefinitionType::String(CharDecl::parse_many(rule)?)),
             Rule::char => {
-                let Some(char_decl) = rule.into_inner().next() else {return None};
+                let Some(char_decl) = rule.into_inner().next() else {
+                    return None;
+                };
 
                 kind = Some(DefinitionType::Char(CharDecl::parse(char_decl)?))
             }
