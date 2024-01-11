@@ -1,10 +1,12 @@
-mod parser;
-mod prelude;
+#![feature(error_generic_member_access)]
 
 use crate::prelude::*;
 
-pub fn parser(input: &str) -> Program {
-    let input = input.parse().unwrap();
+mod parsers;
+mod prelude;
 
-    parser::parser(input).into()
+pub mod errors;
+
+pub fn parse(input: &str) -> Result<Program, JasmineParserError> {
+    Ok(parsers::parse(input.parse()?)?)
 }

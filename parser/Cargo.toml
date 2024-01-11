@@ -10,6 +10,7 @@ itertools = "0.12.0"
 proc-macro2 = "1.0.76"
 quote = "1.0.35"
 syn = "2.0.48"
+thiserror = "1.0.56"
 
 [dependencies.libjasmine]
 path = "../libjasmine"

@@ -15,6 +15,8 @@ pub struct Program {
 
 pub mod prelude {
     pub use crate::functions::Function;
-    pub use crate::types::{Enum, EnumVariant, EnumVariantData, Generic, Struct, Type, TypeId};
+    pub use crate::types::{
+        new_type_id, Enum, EnumVariant, EnumVariantData, Generic, Struct, Type, TypeId,
+    };
     pub use crate::Program;
 }
