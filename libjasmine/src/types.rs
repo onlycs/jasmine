@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 
 use rand::Rng;
 
@@ -14,7 +14,7 @@ pub fn new_type_id() -> TypeId {
 pub struct Generic {
     pub id: TypeId,
     pub name: String,
-    pub constraints: HashSet<TypeId>, // TODO: See if we actually need HashSet > Vec
+    pub constraints: Vec<TypeId>, // TODO: See if we get performance using hashset
 }
 
 #[derive(Clone, Debug)]
@@ -22,7 +22,7 @@ pub struct Struct {
     pub id: TypeId,
     pub name: String,
     pub fields: HashMap<String, TypeId>,
-    pub generics: Vec<TypeId>,
+    pub generics: HashMap<String, Generic>,
     pub methods: HashMap<String, Function>,
 }
 
@@ -43,7 +43,7 @@ pub struct Enum {
     pub id: TypeId,
     pub name: String,
     pub variants: HashMap<String, EnumVariant>,
-    pub generics: Vec<TypeId>,
+    pub generics: HashMap<String, Generic>,
     pub methods: HashMap<String, Function>,
 }
 
@@ -51,7 +51,6 @@ pub struct Enum {
 pub enum Type {
     Struct(Struct),
     Enum(Enum),
-    Generic(Generic),
     Alias(String, TypeId),
     JavaBuiltin(String),
 }

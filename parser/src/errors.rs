@@ -33,7 +33,7 @@ pub enum TypeError {
     UnresolvedType(String),
 
     #[error("the name `{0}` is used multiple times. `{0}` must be defined only once")]
-    TypeAlreadyExists(String),
+    DuplicateType(String),
 }
 
 #[derive(Error, Debug)]
@@ -46,4 +46,10 @@ pub enum SyntaxError {
 
     #[error("Invalid identifier: {0}")]
     InvalidIdent(String),
+
+    #[error("Unexpected token: {0}")]
+    UnexpectedToken(String),
+
+    #[error("Unexpected EOF")]
+    UnexpectedEOF,
 }

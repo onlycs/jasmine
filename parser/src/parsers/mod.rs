@@ -1,4 +1,6 @@
 mod alias;
+mod generics;
+mod structs;
 
 use crate::prelude::*;
 

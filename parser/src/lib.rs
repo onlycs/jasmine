@@ -1,4 +1,4 @@
-#![feature(error_generic_member_access)]
+#![feature(error_generic_member_access, let_chains)]
 
 use crate::prelude::*;
 

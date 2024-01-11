@@ -8,7 +8,7 @@ pub fn parse(
     let alias_ident = expect_ret!(iterator, TokenTree::Ident(ident), { ident.to_string() });
 
     if type_ids.get(&alias_ident).is_some() {
-        panic!("type {} already exists.", alias_ident);
+        bail!(TypeError::DuplicateType(alias_ident));
     }
 
     expect!(iterator, TokenTree::Punct(p), { p.as_char() == '=' });

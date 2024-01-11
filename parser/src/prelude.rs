@@ -1,6 +1,6 @@
 pub use crate::errors::*;
 pub use libjasmine::prelude::*;
-pub use proc_macro2::{TokenStream, TokenTree};
+pub use proc_macro2::{Delimiter, TokenStream, TokenTree};
 pub use std::collections::{HashMap, HashSet};
 
 macro_rules! bail {
