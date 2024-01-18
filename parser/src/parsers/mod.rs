@@ -1,55 +1,51 @@
 mod alias;
+mod function;
 mod generics;
 mod structs;
+mod types;
 
 use crate::prelude::*;
 
-pub fn parse(input: TokenStream) -> Result<Program, JasmineParserError> {
-    let mut iterator = input.into_iter();
-
+fn _parse(
+    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+) -> Result<UncheckedProgram, ParserError> {
     let mut functions = HashMap::new();
-    let mut type_ids = HashMap::new();
     let mut types = HashMap::new();
-    let mut awaiting_types = HashMap::new();
 
     while let Some(next) = iterator.next() {
-        let ident = expect_on!(next, TokenTree::Ident(i), { i });
+        let ident = expect!(on next, TokenTree::Ident(i), ret { i });
 
         match ident.to_string().as_str() {
             "type" => {
-                let (alias, real) = alias::parse(&mut iterator, &type_ids, &mut awaiting_types)?;
+                let alias = alias::parse(iterator)?;
 
-                if let Some(id) = awaiting_types.remove(&alias) {
-                    type_ids.insert(alias.clone(), id);
-                    types.insert(id, Type::Alias(alias, real));
-                } else {
-                    let new_id = new_type_id();
-
-                    type_ids.insert(alias.clone(), new_id);
-                    types.insert(new_id, Type::Alias(alias, real));
-                }
+                types.insert(alias.ident(), alias);
             }
-            "struct" => {}
+            "struct" => {
+                let s = structs::parse(iterator)?;
+
+                types.insert(s.ident(), s);
+            }
+            "fn" => {
+                let f = function::parse(iterator)?;
+
+                functions.insert(f.ident(), f);
+            }
             i => bail!(SyntaxError::InvalidIdent(i.to_string())),
         }
     }
 
-    for (name, id) in awaiting_types {
-        if name.starts_with("__ext_java_") {
-            type_ids.insert(name.clone(), id);
-            types.insert(
-                id,
-                Type::JavaBuiltin(name.trim_start_matches("__ext_java_").to_string()),
-            );
-            continue;
-        }
+    Ok(UncheckedProgram { functions, types })
+}
 
-        bail!(TypeError::UnresolvedType(name));
+pub fn parse(stream: TokenStream) -> Result<UncheckedProgram, FullParserError> {
+    let mut iterator = stream.into_iter().peekable();
+
+    match _parse(&mut iterator) {
+        Ok(p) => Ok(p),
+        Err(e) => Err(FullParserError {
+            error: e,
+            next_item: iterator.next(),
+        }),
     }
-
-    Ok(Program {
-        functions,
-        type_ids,
-        types,
-    })
 }

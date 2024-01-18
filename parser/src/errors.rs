@@ -1,10 +1,34 @@
-use std::backtrace::Backtrace;
+use std::{backtrace::Backtrace, fmt};
 
-use proc_macro2::LexError;
+use proc_macro2::{LexError, TokenTree};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum JasmineParserError {
+pub struct FullParserError {
+    pub error: ParserError,
+    pub next_item: Option<TokenTree>,
+}
+
+impl fmt::Display for FullParserError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        writeln!(f, "error: {}", self.error)?;
+        writeln!(f, "next item: {:?}", self.next_item)?;
+
+        Ok(())
+    }
+}
+
+impl From<LexError> for FullParserError {
+    fn from(value: LexError) -> Self {
+        Self {
+            error: ParserError::from(value),
+            next_item: None,
+        }
+    }
+}
+
+#[derive(Error, Debug)]
+pub enum ParserError {
     #[error("Failed to parse program to tokenstream: {error}")]
     ParseTokenStream {
         #[from]
@@ -29,11 +53,20 @@ pub enum JasmineParserError {
 
 #[derive(Error, Debug)]
 pub enum TypeError {
-    #[error("cannot find type `{0}` in this scope")]
-    UnresolvedType(String),
+    #[error("cannot find type  in this scope. Types must be fully defined before use")]
+    UnresolvedType,
 
     #[error("the name `{0}` is used multiple times. `{0}` must be defined only once")]
     DuplicateType(String),
+
+    #[error("the number of generic types provided do not match")]
+    NonMatchingGenerics,
+
+    #[error("the generic type provided does not satisfy the trait bounds")]
+    TraitBoundsNotMet,
+
+    #[error("tried to constrain using a type that is not a trait")]
+    NonTraitConstraint,
 }
 
 #[derive(Error, Debug)]

@@ -1,33 +1,23 @@
-use itertools::Itertools;
-
+use super::*;
 use crate::prelude::*;
 
 fn parse_constraints(
-    iterator: &mut impl Iterator<Item = TokenTree>,
-    type_ids: &HashMap<String, TypeId>,
-    awaiting_types: &mut HashMap<String, TypeId>,
-) -> Result<Vec<TypeId>, JasmineParserError> {
+    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+) -> Result<Vec<UncheckedFullType>, ParserError> {
     let mut constraints = vec![];
 
-    while let Some(next) = iterator.next() {
-        let ident = expect_on!(next, TokenTree::Ident(i), { i.to_string() });
+    while iterator.peek().is_some() {
+        let fulltype = types::parse_full(iterator)?;
 
-        constraints.push(if let Some(id) = type_ids.get(&ident) {
-            *id
-        } else if let Some(id) = awaiting_types.get(&ident) {
-            *id
-        } else {
-            let id = new_type_id();
-            awaiting_types.insert(ident, id);
+        constraints.push(fulltype);
 
-            id
-        });
-
-        match iterator.next() {
+        match iterator.peek() {
             Some(TokenTree::Punct(p)) if p.as_char() == ',' => {
+                iterator.next();
                 break;
             }
             Some(TokenTree::Punct(p)) if p.as_char() == '+' => {
+                iterator.next();
                 continue;
             }
             Some(TokenTree::Punct(p)) if p.as_char() == '>' => {
@@ -42,49 +32,38 @@ fn parse_constraints(
 }
 
 pub fn parse(
-    iterator: &mut (impl Iterator<Item = TokenTree> + Clone),
-    type_ids: &HashMap<String, TypeId>,
-    awaiting_types: &mut HashMap<String, TypeId>,
-) -> Result<HashMap<String, Generic>, JasmineParserError> {
-    let mut generics = HashMap::new();
+    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+) -> Result<Vec<UncheckedGeneric>, ParserError> {
+    let mut generics = vec![];
 
-    expect!(iterator, TokenTree::Punct(p), { p.as_char() == '<' });
-
-    let mut iterator = iterator.take_while_ref(|t| {
-        if let TokenTree::Punct(p) = t {
-            p.as_char() != '>'
-        } else {
-            true
-        }
-    });
+    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '<' });
 
     while let Some(next) = iterator.next() {
-        let ident = expect_on!(next, TokenTree::Ident(i), { i.to_string() });
+        let ident = expect!(on next, TokenTree::Ident(i), ret { i.to_string() });
 
         match iterator.next() {
-            Some(TokenTree::Punct(p)) if p.as_char() == ',' => {
-                generics.insert(
-                    ident.clone(),
-                    Generic {
-                        id: new_type_id(),
-                        name: ident,
-                        constraints: vec![],
-                    },
-                );
-            }
+            Some(TokenTree::Punct(p)) if p.as_char() == ',' => generics.push(UncheckedGeneric {
+                ident,
+                constraints: vec![],
+            }),
             Some(TokenTree::Punct(p)) if p.as_char() == ':' => {
-                let constraints = parse_constraints(&mut iterator, type_ids, awaiting_types)?;
+                generics.push(UncheckedGeneric {
+                    ident,
+                    constraints: parse_constraints(iterator)?,
+                });
 
-                generics.insert(
-                    ident.clone(),
-                    Generic {
-                        id: new_type_id(),
-                        name: ident,
-                        constraints,
-                    },
-                );
+                if let Some(TokenTree::Punct(p)) = iterator.peek()
+                    && p.as_char() == '>'
+                {
+                    break;
+                }
             }
             Some(TokenTree::Punct(p)) if p.as_char() == '>' => {
+                generics.push(UncheckedGeneric {
+                    ident,
+                    constraints: vec![],
+                });
+
                 break;
             }
             Some(next) => bail!(SyntaxError::UnexpectedToken(next.to_string())),

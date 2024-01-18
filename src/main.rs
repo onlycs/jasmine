@@ -1,12 +1,15 @@
 const TEST_INPUT: &'static str = "
-type T = K;
-type K = __ext_java_int;
+type K = __unsafe_java_int;
+struct MyStruct<J> {
+	other: __unsafe_java_int,
+	another: J,
+}
 ";
 
 fn main() {
     match parser::parse(TEST_INPUT) {
         Ok(program) => {
-            println!("{:?}", program);
+            println!("{:#?}", program);
         }
         Err(e) => {
             panic!("{}", e)
