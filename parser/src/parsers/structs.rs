@@ -15,19 +15,7 @@ pub fn parse(
         { g.stream().into_iter().peekable() }
     );
 
-    let mut fields = HashMap::new();
-
-    while let Some(next) = braced.next() {
-        let ident = expect!(on next, TokenTree::Ident(i), ret { i.to_string() });
-
-        expect!(braced, TokenTree::Punct(p), chk { p.as_char() == ':' });
-
-        let full_type = types::parse_full(&mut braced)?;
-
-        fields.insert(ident, full_type);
-
-        expect!(braced, TokenTree::Punct(p), chk { p.as_char() == ',' });
-    }
+    let fields = common::parse_kv(&mut braced)?;
 
     Ok(UncheckedType {
         ident: Arc::new(type_name),

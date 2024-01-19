@@ -1,4 +1,4 @@
-pub use crate::errors::*;
+pub use crate::{errors::*, iter::*};
 pub use libjasmine::prelude::*;
 pub use proc_macro2::{Delimiter, TokenStream, TokenTree};
 pub use std::collections::HashMap;

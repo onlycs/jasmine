@@ -4,86 +4,44 @@ use crate::prelude::*;
 pub fn parse(
     iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
 ) -> Result<UncheckedFunction, ParserError> {
-    // fn myfn<T>(args) -> return type {block}
-
     let fn_name = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
     let generics = generics::parse(iterator).unwrap_or(vec![]);
 
-    let mut self_as = FunctionSelf::None;
-    let mut params = vec![];
-    let mut can_self_check = true;
+    let mut args = expect!(
+        iterator,
+        TokenTree::Group(g),
+        { g.delimiter() == Delimiter::Parenthesis },
+        { g.stream().into_iter().peekable() }
+    );
 
-    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '(' });
-
-    loop {
-        if matches!(iterator.peek(), Some(TokenTree::Punct(p)) if p.as_char() == ')') {
-            iterator.next();
-            break;
-        }
-
-        if can_self_check {
-            match iterator
-                .peek()
-                .map(|n| n.to_string())
-                .as_ref()
-                .map(|n| n as &str)
-            {
-                Some("self") => {
-                    self_as = FunctionSelf::Consume;
-                    iterator.next();
-                }
-                Some("&") => match iterator
-                    .nth(1)
-                    .map(|n| n.to_string())
-                    .as_ref()
-                    .map(|n| n as &str)
-                {
-                    Some("self") => self_as = FunctionSelf::Ref,
-                    Some("mut") => match iterator
-                        .next()
-                        .map(|n| n.to_string())
-                        .as_ref()
-                        .map(|n| n as &str)
-                    {
-                        Some("self") => self_as = FunctionSelf::RefMut,
-                        Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
-                        None => bail!(SyntaxError::UnexpectedEOF),
-                    },
-                    Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
-                    None => bail!(SyntaxError::UnexpectedEOF),
-                },
-                Some(_) => {
-                    let ident = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
-                    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
-
-                    params.push((ident, types::parse_full(iterator)?));
-                }
+    let self_as = match args.peek() {
+        Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::Consume,
+        Some(TokenTree::Punct(p)) if p.as_char() == '&' => match args.nth(1) {
+            Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::Ref,
+            Some(TokenTree::Ident(i)) if i == "mut" => match args.next() {
+                Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::RefMut,
+                Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
                 None => bail!(SyntaxError::UnexpectedEOF),
-            }
-
-            can_self_check = false;
-        } else {
-            let ident = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
-            expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
-
-            params.push((ident, types::parse_full(iterator)?));
-        }
-
-        match iterator.next() {
-            Some(TokenTree::Punct(p)) => match p.as_char() {
-                ')' => break,
-                ',' => continue,
-                bad => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
             },
             Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
             None => bail!(SyntaxError::UnexpectedEOF),
-        }
+        },
+        _ => FunctionSelf::None,
+    };
+
+    if self_as != FunctionSelf::None && args.peek().is_some() {
+        expect!(args, TokenTree::Punct(p), chk { p.as_char() == ',' });
     }
 
-    let returns = if let Some(TokenTree::Punct(p)) = iterator.peek()
-        && p.as_char() == '-'
+    if self_as == FunctionSelf::Consume {
+        args.next();
+    }
+
+    let params = common::parse_kv(&mut args)?;
+    let returns = if iterator
+        .next_if(|n| matches!(n, TokenTree::Punct(p) if p.as_char() == '-'))
+        .is_some()
     {
-        expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '-' });
         expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '>' });
 
         Some(types::parse_full(iterator)?)

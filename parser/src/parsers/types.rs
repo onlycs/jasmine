@@ -3,7 +3,7 @@ use crate::prelude::*;
 pub fn parse_full<'a>(
     iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
 ) -> Result<UncheckedFullType, ParserError> {
-    let mut refs = iterator.copy_while(|item| {
+    let mut refs = iterator.collect_while(|item| {
         matches!(item, TokenTree::Punct(p) if p.as_char() == '&')
             || matches!(item, TokenTree::Ident(i) if i.to_string() == "mut")
     });
@@ -50,31 +50,4 @@ pub fn parse_full<'a>(
     }
 
     Ok(full_type)
-}
-
-pub trait CopyWhile: Iterator {
-    fn copy_while(
-        &mut self,
-        predicate: impl Fn(&Self::Item) -> bool,
-    ) -> Peekable<impl Iterator<Item = Self::Item>>;
-}
-
-impl<I> CopyWhile for Peekable<I>
-where
-    I: Iterator,
-{
-    fn copy_while(
-        &mut self,
-        predicate: impl Fn(&Self::Item) -> bool,
-    ) -> Peekable<<Vec<Self::Item> as IntoIterator>::IntoIter> {
-        let mut collect = vec![];
-
-        while let Some(next) = self.peek()
-            && predicate(next)
-        {
-            collect.push(self.next().unwrap());
-        }
-
-        collect.into_iter().peekable()
-    }
 }

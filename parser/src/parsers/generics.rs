@@ -6,27 +6,14 @@ fn parse_constraints(
 ) -> Result<Vec<UncheckedFullType>, ParserError> {
     let mut constraints = vec![];
 
-    while iterator.peek().is_some() {
-        let fulltype = types::parse_full(iterator)?;
-
-        constraints.push(fulltype);
-
-        match iterator.peek() {
-            Some(TokenTree::Punct(p)) if p.as_char() == ',' => {
-                iterator.next();
-                break;
-            }
-            Some(TokenTree::Punct(p)) if p.as_char() == '+' => {
-                iterator.next();
-                continue;
-            }
-            Some(TokenTree::Punct(p)) if p.as_char() == '>' => {
-                break;
-            }
-            Some(next) => bail!(SyntaxError::UnexpectedToken(next.to_string())),
-            None => bail!(SyntaxError::UnexpectedEOF),
-        }
-    }
+    iterator
+        .split(|a| match a {
+            TokenTree::Punct(p) => p.as_char() == '+',
+            _ => false,
+        })
+        .map(|mut iter| types::parse_full(&mut iter))
+        .filter_map(Result::ok)
+        .for_each(|generic| constraints.push(generic));
 
     Ok(constraints)
 }
@@ -38,38 +25,32 @@ pub fn parse(
 
     expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '<' });
 
-    while let Some(next) = iterator.next() {
-        let ident = expect!(on next, TokenTree::Ident(i), ret { i.to_string() });
+    iterator
+        .copy_while(|a| match a {
+            TokenTree::Punct(p) => p.as_char() != '>',
+            _ => true,
+        })
+        .split(|a| match a {
+            TokenTree::Punct(p) => p.as_char() == ',',
+            _ => false,
+        })
+        .map(|mut iter| {
+            let ident = expect!(iter, TokenTree::Ident(i), ret { i.to_string() });
+            let constraints = if iter
+                .next_if(|a| matches!(a, TokenTree::Punct(p) if p.as_char() == ':'))
+                .is_some()
+            {
+                parse_constraints(&mut iter)?
+            } else {
+                vec![]
+            };
 
-        match iterator.next() {
-            Some(TokenTree::Punct(p)) if p.as_char() == ',' => generics.push(UncheckedGeneric {
-                ident,
-                constraints: vec![],
-            }),
-            Some(TokenTree::Punct(p)) if p.as_char() == ':' => {
-                generics.push(UncheckedGeneric {
-                    ident,
-                    constraints: parse_constraints(iterator)?,
-                });
+            Result::<_, ParserError>::Ok(UncheckedGeneric { ident, constraints })
+        })
+        .filter_map(Result::ok)
+        .for_each(|generic| generics.push(generic));
 
-                if let Some(TokenTree::Punct(p)) = iterator.peek()
-                    && p.as_char() == '>'
-                {
-                    break;
-                }
-            }
-            Some(TokenTree::Punct(p)) if p.as_char() == '>' => {
-                generics.push(UncheckedGeneric {
-                    ident,
-                    constraints: vec![],
-                });
-
-                break;
-            }
-            Some(next) => bail!(SyntaxError::UnexpectedToken(next.to_string())),
-            None => bail!(SyntaxError::UnexpectedEOF),
-        }
-    }
+    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '>' });
 
     Ok(generics)
 }

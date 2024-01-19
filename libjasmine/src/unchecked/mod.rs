@@ -19,6 +19,7 @@ pub enum UncheckedFullType {
     Ref(Box<UncheckedFullType>),
     RefMut(Box<UncheckedFullType>),
     Generic(String, Vec<UncheckedFullType>),
+    Tuple(Vec<UncheckedFullType>),
     Simple(String),
 }
 

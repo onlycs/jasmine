@@ -3,6 +3,7 @@ mod function;
 mod generics;
 mod structs;
 mod types;
+mod common;
 
 use crate::prelude::*;
 

@@ -4,6 +4,8 @@ struct MyStruct<J> {
 	other: __unsafe_java_int,
 	another: J,
 }
+
+fn main<T, J: K>(&self, param: T, param2: J) -> J {}
 ";
 
 fn main() {

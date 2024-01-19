@@ -3,11 +3,14 @@
     let_chains,
     type_alias_impl_trait,
     trait_alias,
-    stmt_expr_attributes
+    stmt_expr_attributes,
+    if_let_guard,
+    impl_trait_in_assoc_type
 )]
 
 use crate::prelude::*;
 
+mod iter;
 mod parsers;
 mod prelude;
 

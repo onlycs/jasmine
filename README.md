@@ -1,18 +1,9 @@
 # Jasmine: TokenStream-based Parser
 
-Pest was so annoying to use so I just did a `"my_code".parse::<TokenStream>()`
-and parsed it that way. It's basically a proc-macro without the macro part.
+Pest was so annoying to use so I made Rust's built-in `TokenStream` do the
+heavy lifting
 
-## Where are things
+## Usage
 
-- Parser: `parser/`
-- Data structures: `libjasmine/`
-- Runnable binary: `src/main.rs`
-
-## Goofy Jasmine Stuff
-
-- Prefix types with `__ext_java_` to use java builtins
-
-## What is this
-
-Read `README.md` on the main branch.
+`src/main.rs` has a const string that contains some test code.
+AST is pretty printed.

@@ -32,7 +32,7 @@ pub enum BodyData {
     WithBody(FnBody),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub enum FunctionSelf {
     None,
     Ref,
