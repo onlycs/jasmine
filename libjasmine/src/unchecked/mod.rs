@@ -55,22 +55,22 @@ impl UncheckedFunction {
 }
 
 #[derive(Clone, Debug)]
+pub enum UncheckedCompositeData {
+    Struct(HashMap<String, UncheckedFullType>),
+    Tuple(Vec<UncheckedFullType>),
+}
+
+#[derive(Clone, Debug)]
 pub struct UncheckedStruct {
-    pub fields: HashMap<String, UncheckedFullType>,
+    pub inner: UncheckedCompositeData,
     pub generics: Vec<UncheckedGeneric>,
     pub methods: HashMap<Arc<String>, UncheckedFunction>,
     pub traits: Vec<UncheckedFullType>,
 }
 
 #[derive(Clone, Debug)]
-pub enum UncheckedEnumVariantData {
-    Struct(HashMap<String, UncheckedFullType>),
-    Tuple(Vec<UncheckedFullType>),
-}
-
-#[derive(Clone, Debug)]
 pub struct UncheckedEnum {
-    pub variants: HashMap<String, Option<UncheckedEnumVariantData>>,
+    pub variants: HashMap<String, Option<UncheckedCompositeData>>,
     pub generics: Vec<UncheckedGeneric>,
     pub methods: HashMap<Arc<String>, UncheckedFunction>,
     pub traits: Vec<UncheckedFullType>,

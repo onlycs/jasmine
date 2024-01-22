@@ -1,4 +1,5 @@
 pub use crate::{errors::*, iter::*};
+pub use itertools::*;
 pub use libjasmine::prelude::*;
 pub use proc_macro2::{Delimiter, TokenStream, TokenTree};
 pub use std::collections::HashMap;
@@ -16,18 +17,20 @@ macro_rules! expect_mac {
         match $tree {
             $expected => {
                 if !$check {
-                    bail!(SyntaxError::ExpectWithCheck(
-                        stringify!($expected),
-                        stringify!($check)
-                    ))
+                    bail!(SyntaxError::ExpectWithCheck {
+                        item: stringify!($expected),
+                        check: stringify!($check),
+						next: $tree,
+					})
                 } else {
                     $ret
                 }
             }
-            _ => bail!(SyntaxError::ExpectWithCheck(
-                stringify!($expected),
-                stringify!($check)
-            )),
+            _ => bail!(SyntaxError::ExpectWithCheck {
+                item: stringify!($expected),
+                check: stringify!($check),
+				next: $tree,
+			}),
         }
     };
 
@@ -48,19 +51,24 @@ macro_rules! expect_mac {
 		match $tree.peek() {
 			Some($expected) => {
 				if !$check {
-					bail!(SyntaxError::ExpectWithCheck(
-						stringify!($expected),
-						stringify!($check)
-					))
+					bail!(SyntaxError::ExpectWithCheck {
+						item: stringify!($expected),
+						check: stringify!($check),
+						next: $tree.peek().unwrap().clone(),
+					})
 				} else {
 					let Some($expected) = $tree.next() else { panic!() };
 					$ret
 				}
 			}
-			_ => bail!(SyntaxError::ExpectWithCheck(
-				stringify!($expected),
-				stringify!($check)
-			)),
+			Some(other) => {
+				bail!(SyntaxError::ExpectWithCheck {
+					item: stringify!($expected),
+					check: stringify!($check),
+					next: $tree.peek().unwrap().clone(),
+				})
+			}
+			_ => bail!(SyntaxError::UnexpectedEOF),
 		}
 	};
 

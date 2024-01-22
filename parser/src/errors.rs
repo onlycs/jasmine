@@ -12,7 +12,6 @@ pub struct FullParserError {
 impl fmt::Display for FullParserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "error: {}", self.error)?;
-        writeln!(f, "next item: {:?}", self.next_item)?;
 
         Ok(())
     }
@@ -36,14 +35,7 @@ pub enum ParserError {
         backtrace: Backtrace,
     },
 
-    #[error("Type error: {error}")]
-    Type {
-        #[from]
-        error: TypeError,
-        backtrace: Backtrace,
-    },
-
-    #[error("Incorrect next item: {error}")]
+    #[error("Syntax error: {error}")]
     Syntax {
         #[from]
         error: SyntaxError,
@@ -52,36 +44,22 @@ pub enum ParserError {
 }
 
 #[derive(Error, Debug)]
-pub enum TypeError {
-    #[error("cannot find type  in this scope. Types must be fully defined before use")]
-    UnresolvedType,
-
-    #[error("the name `{0}` is used multiple times. `{0}` must be defined only once")]
-    DuplicateType(String),
-
-    #[error("the number of generic types provided do not match")]
-    NonMatchingGenerics,
-
-    #[error("the generic type provided does not satisfy the trait bounds")]
-    TraitBoundsNotMet,
-
-    #[error("tried to constrain using a type that is not a trait")]
-    NonTraitConstraint,
-}
-
-#[derive(Error, Debug)]
 pub enum SyntaxError {
-    #[error("Expected {0}")]
-    ExpectWithoutCheck(&'static str),
+    #[error("Expected {item}. Parsing on {next:?}")]
+    ExpectWithoutCheck { item: &'static str, next: TokenTree },
 
-    #[error("Expected {0} such that {1}")]
-    ExpectWithCheck(&'static str, &'static str),
+    #[error("Expected {item} such that {check}. Parsing on {next:?}")]
+    ExpectWithCheck {
+        item: &'static str,
+        check: &'static str,
+        next: TokenTree,
+    },
 
-    #[error("Invalid identifier: {0}")]
-    InvalidIdent(String),
+    #[error("Invalid identifier: {ident}. Parsing on {next:?}")]
+    InvalidIdent { ident: String, next: TokenTree },
 
     #[error("Unexpected token: {0}")]
-    UnexpectedToken(String),
+    UnexpectedToken(TokenTree),
 
     #[error("Unexpected EOF")]
     UnexpectedEOF,

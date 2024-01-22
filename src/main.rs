@@ -1,11 +1,15 @@
 const TEST_INPUT: &'static str = "
-type K = __unsafe_java_int;
-struct MyStruct<J> {
-	other: __unsafe_java_int,
-	another: J,
+type K = OtherType;
+
+struct S {
+	a: K,
+	b: Vec<K>,
 }
 
-fn main<T, J: K>(&self, param: T, param2: J) -> J {}
+struct N(K);
+
+fn f<L: K>(a: K, b:L) -> Z {}
+fn f<L: K>(a: K, b:L) -> Z;
 ";
 
 fn main() {

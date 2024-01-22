@@ -27,13 +27,14 @@ where
 
     fn next(&mut self) -> Option<Self::Item> {
         self.iter.next_if(|a| (self.predicate)(a));
-        let mut collect = self.iter.collect_while(|a| !(self.predicate)(a));
 
-        if collect.peek().is_some() {
-            Some(collect)
-        } else {
-            None
+        if self.iter.peek().is_none() {
+            return None;
         }
+
+        // if the self.iter is not empty, then an empty collect_while indicates two consecutive
+        // elements that satisfy the predicate
+        Some(self.iter.collect_while(|a| !(self.predicate)(a)))
     }
 }
 

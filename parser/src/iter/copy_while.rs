@@ -1,4 +1,7 @@
-use std::iter::{self, FromFn};
+use std::{
+    fmt,
+    iter::{self, FromFn},
+};
 
 use crate::prelude::*;
 
@@ -20,6 +23,7 @@ pub trait CollectWhile: Iterator {
 impl<I> CopyWhile for Peekable<I>
 where
     I: Iterator,
+    I::Item: fmt::Debug,
 {
     fn copy_while<'a>(
         &'a mut self,

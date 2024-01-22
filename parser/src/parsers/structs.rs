@@ -8,19 +8,29 @@ pub fn parse(
 
     let generics = generics::parse(iterator).unwrap_or(vec![]);
 
-    let mut braced = expect!(
+    let (mut inner, inner_delim) = expect!(
         iterator,
         TokenTree::Group(g),
-        { g.delimiter() == Delimiter::Brace },
-        { g.stream().into_iter().peekable() }
+        { matches!(g.delimiter(), Delimiter::Brace | Delimiter::Parenthesis) },
+        { (g.stream().into_iter().peekable(), g.delimiter()) }
     );
 
-    let fields = common::parse_kv(&mut braced)?;
+    let inner = match inner_delim {
+        Delimiter::Parenthesis => UncheckedCompositeData::Tuple(types::parse_tuple(&mut inner)?),
+        Delimiter::Brace => UncheckedCompositeData::Struct(common::parse_kv(&mut inner)?),
+        bad => bail!(SyntaxError::UnexpectedToken(TokenTree::Group(
+            proc_macro2::Group::new(bad, inner.collect())
+        ))),
+    };
+
+    if inner_delim == Delimiter::Parenthesis {
+        expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ';' });
+    }
 
     Ok(UncheckedType {
         ident: Arc::new(type_name),
         kind: UncheckedTypeKind::Struct(UncheckedStruct {
-            fields,
+            inner,
             generics,
             methods: HashMap::new(),
             traits: vec![],

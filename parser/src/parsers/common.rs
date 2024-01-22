@@ -17,7 +17,7 @@ pub fn parse_kv<Collector: CollectKv>(
             let value = types::parse_full(&mut iter)?;
             Result::<_, ParserError>::Ok((ident, value))
         })
-        .filter_map(Result::ok)
+        .check()?
         .for_each(|(ident, value)| collector.add(ident, value));
 
     Ok(collector)

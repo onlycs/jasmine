@@ -4,6 +4,8 @@ use crate::prelude::*;
 fn parse_constraints(
     iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
 ) -> Result<Vec<UncheckedFullType>, ParserError> {
+    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
+
     let mut constraints = vec![];
 
     iterator
@@ -12,7 +14,7 @@ fn parse_constraints(
             _ => false,
         })
         .map(|mut iter| types::parse_full(&mut iter))
-        .filter_map(Result::ok)
+        .check()?
         .for_each(|generic| constraints.push(generic));
 
     Ok(constraints)
@@ -36,14 +38,7 @@ pub fn parse(
         })
         .map(|mut iter| {
             let ident = expect!(iter, TokenTree::Ident(i), ret { i.to_string() });
-            let constraints = if iter
-                .next_if(|a| matches!(a, TokenTree::Punct(p) if p.as_char() == ':'))
-                .is_some()
-            {
-                parse_constraints(&mut iter)?
-            } else {
-                vec![]
-            };
+            let constraints = parse_constraints(&mut iter).unwrap_or(vec![]);
 
             Result::<_, ParserError>::Ok(UncheckedGeneric { ident, constraints })
         })

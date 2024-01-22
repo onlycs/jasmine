@@ -20,10 +20,10 @@ pub fn parse(
             Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::Ref,
             Some(TokenTree::Ident(i)) if i == "mut" => match args.next() {
                 Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::RefMut,
-                Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
+                Some(bad) => bail!(SyntaxError::UnexpectedToken(bad)),
                 None => bail!(SyntaxError::UnexpectedEOF),
             },
-            Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
+            Some(bad) => bail!(SyntaxError::UnexpectedToken(bad)),
             None => bail!(SyntaxError::UnexpectedEOF),
         },
         _ => FunctionSelf::None,
@@ -54,7 +54,7 @@ pub fn parse(
             UncheckedBodyData::WithBody(g)
         }
         Some(TokenTree::Punct(p)) if p.as_char() == ';' => UncheckedBodyData::Abstract,
-        Some(bad) => bail!(SyntaxError::UnexpectedToken(bad.to_string())),
+        Some(bad) => bail!(SyntaxError::UnexpectedToken(bad)),
         None => bail!(SyntaxError::UnexpectedEOF),
     };
 

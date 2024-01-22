@@ -1,8 +1,29 @@
 use crate::prelude::*;
 
-pub fn parse_full<'a>(
+pub fn parse_tuple(
+    iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
+) -> Result<Vec<UncheckedFullType>, ParserError> {
+    let res = iterator
+        .split(|val| matches!(val, TokenTree::Punct(p) if p.as_char() == ','))
+        .map(|mut group| parse_full(&mut group))
+        .check()?
+        .collect_vec();
+
+    Ok(res)
+}
+
+pub fn parse_full(
     iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
 ) -> Result<UncheckedFullType, ParserError> {
+    if let Some(TokenTree::Group(g)) = iterator.peek()
+        && g.delimiter() == Delimiter::Parenthesis
+    {
+        let inner = g.stream().into_iter();
+        let inner = parse_tuple(&mut inner.peekable())?;
+
+        return Ok(UncheckedFullType::Tuple(inner));
+    }
+
     let mut refs = iterator.collect_while(|item| {
         matches!(item, TokenTree::Punct(p) if p.as_char() == '&')
             || matches!(item, TokenTree::Ident(i) if i.to_string() == "mut")
@@ -11,24 +32,22 @@ pub fn parse_full<'a>(
     let outer = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
     let mut inner = vec![];
 
-    if let Some(TokenTree::Punct(p)) = iterator.peek()
-        && p.as_char() == '<'
+    if iterator
+        .next_if(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == '<'))
+        .is_some()
     {
-        while let Some(next) = iterator.next() {
-            if let TokenTree::Punct(p) = &next
-                && p.as_char() == '>'
-            {
-                break;
-            }
+        let mut generics =
+            iterator.copy_while(|p| !matches!(p, TokenTree::Punct(p) if p.as_char() == '>'));
 
-            if let TokenTree::Punct(p) = &next
-                && p.as_char() != ','
-            {
-                bail!(SyntaxError::UnexpectedToken(next.to_string()))
-            }
+        inner = generics
+            .split(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == ','))
+            .map(|mut iter| parse_full(&mut iter))
+            .check()?
+            .collect_vec();
 
-            inner.push(parse_full(iterator)?);
-        }
+        drop(generics);
+
+        expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '>' });
     }
 
     let mut full_type = if inner.is_empty() {

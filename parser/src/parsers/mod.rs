@@ -1,9 +1,9 @@
 mod alias;
+mod common;
 mod function;
 mod generics;
 mod structs;
 mod types;
-mod common;
 
 use crate::prelude::*;
 
@@ -14,7 +14,7 @@ fn _parse(
     let mut types = HashMap::new();
 
     while let Some(next) = iterator.next() {
-        let ident = expect!(on next, TokenTree::Ident(i), ret { i });
+        let ident = expect!(on next, TokenTree::Ident(ref i), ret { i });
 
         match ident.to_string().as_str() {
             "type" => {
@@ -32,7 +32,10 @@ fn _parse(
 
                 functions.insert(f.ident(), f);
             }
-            i => bail!(SyntaxError::InvalidIdent(i.to_string())),
+            i => bail!(SyntaxError::InvalidIdent {
+                ident: i.to_string(),
+                next: next,
+            }),
         }
     }
 
