@@ -1,11 +1,8 @@
-use std::{
-    fmt,
-    iter::{self, FromFn},
-};
+use std::iter::{self, FromFn};
 
 use crate::prelude::*;
 
-/// LAZY: does not advance the iterator on it's own
+/// LAZY: does not advance the iterator unless using .next()
 pub trait CopyWhile: Iterator {
     fn copy_while<'a>(
         &'a mut self,
@@ -13,6 +10,7 @@ pub trait CopyWhile: Iterator {
     ) -> Peekable<FromFn<impl FnMut() -> Option<Self::Item> + 'a>>;
 }
 
+/// NOT LAZY: advances the iterator until predicate returns false
 pub trait CollectWhile: Iterator {
     fn collect_while(
         &mut self,
@@ -23,7 +21,6 @@ pub trait CollectWhile: Iterator {
 impl<I> CopyWhile for Peekable<I>
 where
     I: Iterator,
-    I::Item: fmt::Debug,
 {
     fn copy_while<'a>(
         &'a mut self,

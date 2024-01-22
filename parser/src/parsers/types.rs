@@ -2,7 +2,7 @@ use crate::prelude::*;
 
 pub fn parse_tuple(
     iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
-) -> Result<Vec<UncheckedFullType>, ParserError> {
+) -> Result<Vec<UncheckedFullTypeId>, ParserError> {
     let res = iterator
         .split(|val| matches!(val, TokenTree::Punct(p) if p.as_char() == ','))
         .map(|mut group| parse_full(&mut group))
@@ -14,14 +14,14 @@ pub fn parse_tuple(
 
 pub fn parse_full(
     iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
-) -> Result<UncheckedFullType, ParserError> {
+) -> Result<UncheckedFullTypeId, ParserError> {
     if let Some(TokenTree::Group(g)) = iterator.peek()
         && g.delimiter() == Delimiter::Parenthesis
     {
         let inner = g.stream().into_iter();
         let inner = parse_tuple(&mut inner.peekable())?;
 
-        return Ok(UncheckedFullType::Tuple(inner));
+        return Ok(UncheckedFullTypeId::Tuple(inner));
     }
 
     let mut refs = iterator.collect_while(|item| {
@@ -30,6 +30,22 @@ pub fn parse_full(
     });
 
     let outer = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
+
+    // pathed (path::to::type)
+    if iterator
+        .next_if(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == ':')) // only consumes first colon
+        .is_some()
+    {
+        expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
+
+        let ahead = parse_full(iterator)?;
+
+        return Ok(UncheckedFullTypeId::Path {
+            behind: outer,
+            ahead: Box::new(ahead),
+        });
+    }
+
     let mut inner = vec![];
 
     if iterator
@@ -51,18 +67,18 @@ pub fn parse_full(
     }
 
     let mut full_type = if inner.is_empty() {
-        UncheckedFullType::Simple(outer)
+        UncheckedFullTypeId::Simple(outer)
     } else {
-        UncheckedFullType::Generic(outer, inner)
+        UncheckedFullTypeId::Generic { outer, inner }
     };
 
     while let Some(next) = refs.next() {
         full_type = match next {
             TokenTree::Punct(p) if p.as_char() == '&' => {
-                UncheckedFullType::Ref(Box::new(full_type))
+                UncheckedFullTypeId::Ref(Box::new(full_type))
             }
             TokenTree::Ident(i) if i.to_string() == "mut" => {
-                UncheckedFullType::RefMut(Box::new(full_type))
+                UncheckedFullTypeId::RefMut(Box::new(full_type))
             }
             _ => unreachable!(),
         }

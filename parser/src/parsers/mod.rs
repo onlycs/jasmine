@@ -1,8 +1,10 @@
 mod alias;
 mod common;
+mod enums;
 mod function;
 mod generics;
 mod structs;
+mod traits;
 mod types;
 
 use crate::prelude::*;
@@ -31,6 +33,16 @@ fn _parse(
                 let f = function::parse(iterator)?;
 
                 functions.insert(f.ident(), f);
+            }
+            "enum" => {
+                let e = enums::parse(iterator)?;
+
+                types.insert(e.ident(), e);
+            }
+            "trait" => {
+                let t = traits::parse(iterator)?;
+
+                types.insert(t.ident(), t);
             }
             i => bail!(SyntaxError::InvalidIdent {
                 ident: i.to_string(),

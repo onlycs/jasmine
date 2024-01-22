@@ -10,6 +10,22 @@ struct N(K);
 
 fn f<L: K>(a: K, b:L) -> Z {}
 fn f<L: K>(a: K, b:L) -> Z;
+
+enum E {
+	A(K),
+	B(K),
+	C(K),
+}
+
+enum G<L: K> {
+	A(L),
+	B(L),
+	C {
+		a: L,
+		b: L,
+	},
+	D,
+}
 ";
 
 fn main() {

@@ -1,29 +1,33 @@
-use proc_macro2::Group;
-use std::collections::HashMap;
+use proc_macro2::{Group, TokenStream};
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::prelude::FunctionSelf;
 
-// pre-typechecked structs. uses strings as idents.
-// resolved to checked structs. they use u32's as idents
-// and are fully typechecked
-
 #[derive(Clone, Debug)]
 pub struct UncheckedGeneric {
     pub ident: String,
-    pub constraints: Vec<UncheckedFullType>,
+    pub constraints: HashSet<UncheckedFullTypeId>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
-pub enum UncheckedFullType {
-    Ref(Box<UncheckedFullType>),
-    RefMut(Box<UncheckedFullType>),
-    Generic(String, Vec<UncheckedFullType>),
-    Tuple(Vec<UncheckedFullType>),
+#[derive(Clone, PartialEq, Hash, Eq, Debug)]
+pub enum UncheckedFullTypeId {
+    Ref(Box<UncheckedFullTypeId>),
+    RefMut(Box<UncheckedFullTypeId>),
+    Generic {
+        outer: String,
+        inner: Vec<UncheckedFullTypeId>,
+    },
+    // recursive, so we get Path("moda", Path("modb", Simple("abc")) corresponding to moda::modb::abc
+    Path {
+        behind: String,
+        ahead: Box<UncheckedFullTypeId>,
+    },
+    Tuple(Vec<UncheckedFullTypeId>),
     Simple(String),
 }
 
-impl UncheckedFullType {
+impl UncheckedFullTypeId {
     pub fn is_ref(&self) -> bool {
         match self {
             Self::Ref(_) | Self::RefMut(_) => true,
@@ -42,8 +46,8 @@ pub enum UncheckedBodyData {
 pub struct UncheckedFunction {
     pub ident: Arc<String>,
     pub generics: Vec<UncheckedGeneric>,
-    pub params: Vec<(String, UncheckedFullType)>,
-    pub returns: Option<UncheckedFullType>,
+    pub params: Vec<(String, UncheckedFullTypeId)>,
+    pub returns: Option<UncheckedFullTypeId>,
     pub self_as: FunctionSelf,
     pub body: UncheckedBodyData,
 }
@@ -56,8 +60,8 @@ impl UncheckedFunction {
 
 #[derive(Clone, Debug)]
 pub enum UncheckedCompositeData {
-    Struct(HashMap<String, UncheckedFullType>),
-    Tuple(Vec<UncheckedFullType>),
+    Struct(HashMap<String, UncheckedFullTypeId>),
+    Tuple(Vec<UncheckedFullTypeId>),
 }
 
 #[derive(Clone, Debug)]
@@ -65,7 +69,7 @@ pub struct UncheckedStruct {
     pub inner: UncheckedCompositeData,
     pub generics: Vec<UncheckedGeneric>,
     pub methods: HashMap<Arc<String>, UncheckedFunction>,
-    pub traits: Vec<UncheckedFullType>,
+    pub traits: Vec<UncheckedFullTypeId>,
 }
 
 #[derive(Clone, Debug)]
@@ -73,21 +77,35 @@ pub struct UncheckedEnum {
     pub variants: HashMap<String, Option<UncheckedCompositeData>>,
     pub generics: Vec<UncheckedGeneric>,
     pub methods: HashMap<Arc<String>, UncheckedFunction>,
-    pub traits: Vec<UncheckedFullType>,
+    pub traits: Vec<UncheckedFullTypeId>,
+}
+
+#[derive(Clone, Debug)]
+pub struct UncheckedAssicatedType {
+    pub constraints: HashSet<UncheckedFullTypeId>,
+    pub default: Option<UncheckedFullTypeId>,
+}
+
+#[derive(Clone, Debug)]
+pub struct UncheckedAssicatedConst {
+    pub ty: UncheckedFullTypeId,
+    pub default: Option<TokenStream>, /* storing expr */
 }
 
 #[derive(Clone, Debug)]
 pub struct UncheckedTrait {
     pub generics: Vec<UncheckedGeneric>,
     pub methods: HashMap<Arc<String>, UncheckedFunction>,
-    pub constraints: Vec<UncheckedFullType>,
+    pub constraints: HashSet<UncheckedFullTypeId>,
+    pub associated_types: HashMap<String, UncheckedAssicatedType>,
+    pub consts: HashMap<String, UncheckedAssicatedConst>,
 }
 
 #[derive(Clone, Debug)]
 pub enum UncheckedTypeKind {
     Struct(UncheckedStruct),
     Enum(UncheckedEnum),
-    AliasTo(UncheckedFullType),
+    AliasTo(UncheckedFullTypeId),
     Trait(UncheckedTrait),
     Generic(UncheckedGeneric),
     JavaBuiltin,

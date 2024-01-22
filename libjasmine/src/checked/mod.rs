@@ -1,7 +1,7 @@
 pub mod fnbody;
 
 use fnbody::*;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 pub type TypeId = u32;
@@ -14,16 +14,22 @@ pub fn new_type_id() -> TypeId {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct FullTypeId {
-    pub outer: TypeId,
-    pub generics: Vec<FullTypeId>,
+#[derive(Clone, PartialEq, Debug)]
+pub enum FullTypeId {
+    Ref(Box<FullTypeId>),
+    RefMut(Box<FullTypeId>),
+    Generic {
+        outer: TypeId,
+        inner: Vec<FullTypeId>,
+    },
+    Tuple(Vec<FullTypeId>),
+    Simple(TypeId),
 }
 
 #[derive(Clone, Debug)]
 pub struct Generic {
     pub ident: String,
-    pub constraints: Vec<FullTypeId>, // TODO: See if we get performance using hashset
+    pub constraints: HashSet<FullTypeId>,
 }
 
 #[derive(Clone, Debug)]
@@ -43,33 +49,30 @@ pub enum FunctionSelf {
 #[derive(Clone, Debug)]
 pub struct Function {
     pub ident: Arc<String>,
-    pub generics: HashMap<String, Generic>,
+    pub generics: Vec<Generic>,
     pub params: Vec<(String, TypeId)>,
     pub returns: TypeId,
     pub body: BodyData,
     pub self_as: FunctionSelf,
+}
 
-    // in impls or traits
-    pub _static: bool,
+#[derive(Clone, Debug)]
+pub enum CompositeData {
+    Struct(HashMap<String, TypeId>),
+    Tuple(Vec<TypeId>),
 }
 
 #[derive(Clone, Debug)]
 pub struct Struct {
-    pub fields: HashMap<String, FullTypeId>,
+    pub inner: CompositeData,
     pub generics: Vec<Generic>,
     pub methods: HashMap<Arc<String>, Function>,
     pub traits: Vec<FullTypeId>,
 }
 
 #[derive(Clone, Debug)]
-pub enum EnumVariantData {
-    Struct(HashMap<String, FullTypeId>),
-    Tuple(Vec<FullTypeId>),
-}
-
-#[derive(Clone, Debug)]
 pub struct Enum {
-    pub variants: HashMap<String, Option<EnumVariantData>>,
+    pub variants: HashMap<String, Option<CompositeData>>,
     pub generics: HashMap<String, Generic>,
     pub methods: HashMap<String, Function>,
     pub traits: Vec<FullTypeId>,
@@ -79,14 +82,14 @@ pub struct Enum {
 pub struct Trait {
     pub generics: HashMap<String, Generic>,
     pub methods: HashMap<String, Function>,
-    pub constraints: Vec<FullTypeId>,
+    pub constraints: HashSet<FullTypeId>,
 }
 
 #[derive(Clone, Debug)]
 pub enum TypeKind {
     Struct(Struct),
     Enum(Enum),
-    Alias(String, FullTypeId),
+    AliasTo(FullTypeId),
     Trait(Trait),
     Generic(Generic),
     JavaBuiltin,

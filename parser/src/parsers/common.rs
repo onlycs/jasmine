@@ -23,27 +23,48 @@ pub fn parse_kv<Collector: CollectKv>(
     Ok(collector)
 }
 
-pub trait CollectKv {
-    fn new() -> Self;
-    fn add(&mut self, key: String, value: UncheckedFullType);
+pub fn parse_composite_data(
+    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+) -> Result<UncheckedCompositeData, ParserError> {
+    let (mut inner, inner_delim) = expect!(
+        iterator,
+        TokenTree::Group(g),
+        { matches!(g.delimiter(), Delimiter::Brace | Delimiter::Parenthesis) },
+        { (g.stream().into_iter().peekable(), g.delimiter()) }
+    );
+
+    let inner = match inner_delim {
+        Delimiter::Parenthesis => UncheckedCompositeData::Tuple(types::parse_tuple(&mut inner)?),
+        Delimiter::Brace => UncheckedCompositeData::Struct(common::parse_kv(&mut inner)?),
+        bad => bail!(SyntaxError::UnexpectedToken(TokenTree::Group(
+            proc_macro2::Group::new(bad, inner.collect())
+        ))),
+    };
+
+    Ok(inner)
 }
 
-impl CollectKv for HashMap<String, UncheckedFullType> {
+pub trait CollectKv {
+    fn new() -> Self;
+    fn add(&mut self, key: String, value: UncheckedFullTypeId);
+}
+
+impl CollectKv for HashMap<String, UncheckedFullTypeId> {
     fn new() -> Self {
         HashMap::new()
     }
 
-    fn add(&mut self, key: String, value: UncheckedFullType) {
+    fn add(&mut self, key: String, value: UncheckedFullTypeId) {
         self.insert(key, value);
     }
 }
 
-impl CollectKv for Vec<(String, UncheckedFullType)> {
+impl CollectKv for Vec<(String, UncheckedFullTypeId)> {
     fn new() -> Self {
         vec![]
     }
 
-    fn add(&mut self, key: String, value: UncheckedFullType) {
+    fn add(&mut self, key: String, value: UncheckedFullTypeId) {
         self.push((key, value));
     }
 }
