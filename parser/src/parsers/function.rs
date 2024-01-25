@@ -1,17 +1,17 @@
 use super::*;
 use crate::prelude::*;
 
-pub fn parse(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
-) -> Result<UncheckedFunction, ParserError> {
+pub fn parse(iterator: &mut TokenIterator) -> Result<UncheckedFunction, ParserError> {
     let fn_name = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
     let generics = generics::parse(iterator).unwrap_or(vec![]);
 
-    let mut args = expect!(
+    println!("{:?}", iterator.peek());
+
+    let mut args: TokenIterator = expect!(
         iterator,
         TokenTree::Group(g),
         { g.delimiter() == Delimiter::Parenthesis },
-        { g.stream().into_iter().peekable() }
+        { g.stream().into() }
     );
 
     let self_as = match args.peek() {
@@ -38,12 +38,7 @@ pub fn parse(
     }
 
     let params = common::parse_kv(&mut args)?;
-    let returns = if iterator
-        .next_if(|n| matches!(n, TokenTree::Punct(p) if p.as_char() == '-'))
-        .is_some()
-    {
-        expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '>' });
-
+    let returns = if iterator.matches("->") {
         Some(types::parse_full(iterator)?)
     } else {
         None

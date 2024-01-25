@@ -1,43 +1,36 @@
 use crate::prelude::*;
 
-pub fn parse_tuple(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
-) -> Result<Vec<UncheckedFullTypeId>, ParserError> {
+pub fn parse_tuple(iterator: &mut TokenIterator) -> Result<Vec<UncheckedFullTypeId>, ParserError> {
     let res = iterator
-        .split(|val| matches!(val, TokenTree::Punct(p) if p.as_char() == ','))
-        .map(|mut group| parse_full(&mut group))
+        .split(',')
+        .map(|group| parse_full(&mut group.into()))
         .check()?
         .collect_vec();
 
     Ok(res)
 }
 
-pub fn parse_full(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree>>,
-) -> Result<UncheckedFullTypeId, ParserError> {
+pub fn parse_full(iterator: &mut TokenIterator) -> Result<UncheckedFullTypeId, ParserError> {
     if let Some(TokenTree::Group(g)) = iterator.peek()
         && g.delimiter() == Delimiter::Parenthesis
     {
-        let inner = g.stream().into_iter();
-        let inner = parse_tuple(&mut inner.peekable())?;
+        let inner = g.stream();
+        let inner = parse_tuple(&mut inner.into())?;
 
         return Ok(UncheckedFullTypeId::Tuple(inner));
     }
 
-    let mut refs = iterator.collect_while(|item| {
-        matches!(item, TokenTree::Punct(p) if p.as_char() == '&')
-            || matches!(item, TokenTree::Ident(i) if i.to_string() == "mut")
-    });
+    let mut refs = iterator
+        .collect_while(|item| {
+            matches!(item, TokenTree::Punct(p) if p.as_char() == '&')
+                || matches!(item, TokenTree::Ident(i) if i.to_string() == "mut")
+        })
+        .into_iter();
 
     let outer = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
 
     // pathed (path::to::type)
-    if iterator
-        .next_if(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == ':')) // only consumes first colon
-        .is_some()
-    {
-        expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
-
+    if iterator.matches("::") {
         let ahead = parse_full(iterator)?;
 
         return Ok(UncheckedFullTypeId::Path {
@@ -46,22 +39,18 @@ pub fn parse_full(
         });
     }
 
-    let mut inner = vec![];
+    let inner = vec![];
 
-    if iterator
-        .next_if(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == '<'))
-        .is_some()
-    {
-        let mut generics =
-            iterator.copy_while(|p| !matches!(p, TokenTree::Punct(p) if p.as_char() == '>'));
+    if iterator.matches("<") {
+        iterator.permit_if(|p| !matches!(p, TokenTree::Punct(p) if p.as_char() == '>'));
 
-        inner = generics
-            .split(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == ','))
-            .map(|mut iter| parse_full(&mut iter))
+        iterator
+            .split(',')
+            .map(|iter| parse_full(&mut iter.into()))
             .check()?
             .collect_vec();
 
-        drop(generics);
+        iterator.remove_first_limit();
 
         expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == '>' });
     }
@@ -73,13 +62,9 @@ pub fn parse_full(
     };
 
     while let Some(next) = refs.next() {
-        full_type = match next {
-            TokenTree::Punct(p) if p.as_char() == '&' => {
-                UncheckedFullTypeId::Ref(Box::new(full_type))
-            }
-            TokenTree::Ident(i) if i.to_string() == "mut" => {
-                UncheckedFullTypeId::RefMut(Box::new(full_type))
-            }
+        full_type = match next.to_string().as_str() {
+            "&" => UncheckedFullTypeId::Ref(Box::new(full_type)),
+            "mut" => UncheckedFullTypeId::RefMut(Box::new(full_type)),
             _ => unreachable!(),
         }
     }

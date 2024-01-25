@@ -1,7 +1,7 @@
 mod check;
-mod copy_while;
 mod split;
+mod token_iter;
 
 pub use check::*;
-pub use copy_while::*;
 pub use split::*;
+pub use token_iter::*;

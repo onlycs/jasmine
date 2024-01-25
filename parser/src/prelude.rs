@@ -3,7 +3,6 @@ pub use itertools::*;
 pub use libjasmine::prelude::*;
 pub use proc_macro2::{Delimiter, TokenStream, TokenTree};
 pub use std::collections::{HashMap, HashSet};
-pub use std::iter::Peekable;
 pub use std::sync::Arc;
 
 macro_rules! bail {

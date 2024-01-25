@@ -5,7 +5,8 @@
     trait_alias,
     stmt_expr_attributes,
     if_let_guard,
-    impl_trait_in_assoc_type
+    impl_trait_in_assoc_type,
+    iter_collect_into
 )]
 
 use crate::prelude::*;

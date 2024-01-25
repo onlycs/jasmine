@@ -12,6 +12,7 @@ pub struct FullParserError {
 impl fmt::Display for FullParserError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         writeln!(f, "error: {}", self.error)?;
+        writeln!(f, "next item: {:?}", self.next_item)?;
 
         Ok(())
     }
@@ -41,6 +42,13 @@ pub enum ParserError {
         error: SyntaxError,
         backtrace: Backtrace,
     },
+
+    #[error("Type error: {error}")]
+    Type {
+        #[from]
+        error: TypeError,
+        backtrace: Backtrace,
+    },
 }
 
 #[derive(Error, Debug)]
@@ -63,4 +71,19 @@ pub enum SyntaxError {
 
     #[error("Unexpected EOF")]
     UnexpectedEOF,
+}
+
+#[derive(Error, Debug)]
+pub enum TypeError {
+    #[error("Duplicate type: {0}")]
+    DuplicateType(String),
+
+    #[error("Duplicate function: {0}")]
+    DuplicateFunction(String),
+
+    #[error("Duplicate enum variant: {0}")]
+    DuplicateVariant(String),
+
+    #[error("Duplicate struct field or argument: {0}")]
+    DupilicateKV(String),
 }

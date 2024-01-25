@@ -2,26 +2,34 @@ use super::*;
 use crate::prelude::*;
 
 fn parse_assoc_type(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+    iterator: &mut TokenIterator,
 ) -> Result<(String, UncheckedAssicatedType), ParserError> {
     let ident = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
-    let constraints = generics::parse_constraints(&mut iterator.copy_while(|t| {
+
+    let constraints = generics::parse_constraints(iterator.permitting(|t| {
         !matches!(t, TokenTree::Punct(p) if p.as_char() == ';')
             && !matches!(t, TokenTree::Punct(p) if p.as_char() == '=')
     }))
     .unwrap_or_default();
 
-    let default = if iterator
-        .next_if(|a| matches!(a, TokenTree::Punct(p) if p.as_char() == '='))
-        .is_some()
-    {
-        let mut default =
-            iterator.collect_while(|t| !matches!(t, TokenTree::Punct(p) if p.as_char() == ';'));
+    iterator.remove_first_limit();
 
-        Some(types::parse_full(&mut default)?)
+    let default = if iterator.matches('=') {
+        iterator.permit_if(|t| match t {
+            TokenTree::Punct(p) if p.as_char() == ';' => false,
+            TokenTree::Punct(p) if p.as_char() == '=' => false,
+            _ => true,
+        });
+
+        let ty = types::parse_full(iterator)?;
+        iterator.remove_first_limit();
+
+        Some(ty)
     } else {
         None
     };
+
+    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ';' });
 
     Ok((
         ident,
@@ -33,42 +41,44 @@ fn parse_assoc_type(
 }
 
 fn parse_assoc_const(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+    iterator: &mut TokenIterator,
 ) -> Result<(String, UncheckedAssicatedConst), ParserError> {
     let ident = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
+
+    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
+
     let ty = types::parse_full(iterator)?;
 
-    let default = if iterator
-        .next_if(|a| matches!(a, TokenTree::Punct(p) if p.as_char() == '='))
-        .is_some()
-    {
-        Some(
-            iterator
-                .collect_while(|t| !matches!(t, TokenTree::Punct(p) if p.as_char() == ';'))
-                .collect(),
-        )
+    let default = if iterator.matches('=') {
+        Some(iterator.collect_while(|t| !matches!(t, TokenTree::Punct(p) if p.as_char() == ';')))
     } else {
         None
     };
 
-    Ok((ident, UncheckedAssicatedConst { ty, default }))
+    expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ';' });
+
+    Ok((
+        ident,
+        UncheckedAssicatedConst {
+            ty,
+            default: default.map(Vec::into_iter).map(Iterator::collect),
+        },
+    ))
 }
 
-pub fn parse(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
-) -> Result<UncheckedType, ParserError> {
+pub fn parse(iterator: &mut TokenIterator) -> Result<UncheckedType, ParserError> {
     let type_name = expect!(iterator, TokenTree::Ident(ident), ret { ident.to_string() });
     let generics = generics::parse(iterator).unwrap_or(vec![]);
-    let constraints = generics::parse_constraints(
-        &mut iterator.copy_while(|t| !matches!(t, TokenTree::Group(_))),
-    )
-    .unwrap_or_default();
 
-    let mut inner = expect!(
+    iterator.permit_if(|t| !matches!(t, TokenTree::Group(_)));
+    let constraints = generics::parse_constraints(iterator).unwrap_or_default();
+    iterator.remove_first_limit();
+
+    let mut inner: TokenIterator = expect!(
         iterator,
         TokenTree::Group(g),
         { g.delimiter() == Delimiter::Brace },
-        { g.stream().into_iter().peekable() }
+        { g.stream().into() }
     );
 
     let mut associated_types = HashMap::new();
@@ -80,21 +90,21 @@ pub fn parse(
 
         match next.to_string().as_str() {
             "type" => {
-                let (ident, assoc) = parse_assoc_type(iterator)?;
+                let (ident, assoc) = parse_assoc_type(&mut inner)?;
 
                 if associated_types.insert(ident.clone(), assoc).is_some() {
                     panic!() // TODO: Type error
                 }
             }
             "const" => {
-                let (ident, assoc) = parse_assoc_const(iterator)?;
+                let (ident, assoc) = parse_assoc_const(&mut inner)?;
 
                 if consts.insert(ident, assoc).is_some() {
                     panic!() // TODO: Type error
                 }
             }
             "fn" => {
-                let f = function::parse(iterator)?;
+                let f = function::parse(&mut inner)?;
 
                 methods.insert(f.ident(), f);
             }

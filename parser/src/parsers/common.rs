@@ -2,35 +2,42 @@ use super::*;
 use crate::prelude::*;
 
 pub fn parse_kv<Collector: CollectKv>(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+    iterator: &mut TokenIterator,
 ) -> Result<Collector, ParserError> {
-    let mut collector = Collector::new();
-
-    iterator
-        .split(|a| match a {
-            TokenTree::Punct(punct) => punct.as_char() == ',',
-            _ => false,
-        })
-        .map(|mut iter| {
+    let collector = iterator
+        .split(',')
+        .map(Vec::<TokenTree>::into)
+        .map(|mut iter: TokenIterator| {
             let ident = expect!(iter, TokenTree::Ident(i), ret { i.to_string() });
             expect!(iter, TokenTree::Punct(punct), ret { punct.as_char() == ':' });
             let value = types::parse_full(&mut iter)?;
             Result::<_, ParserError>::Ok((ident, value))
         })
         .check()?
-        .for_each(|(ident, value)| collector.add(ident, value));
+        .fold(
+            Result::<_, TypeError>::Ok(Collector::new()),
+            |collector, (ident, value)| {
+                let mut collector = collector?;
+
+                if collector.add(ident.clone(), value) {
+                    bail!(TypeError::DupilicateKV(ident));
+                }
+
+                Ok(collector)
+            },
+        )?;
 
     Ok(collector)
 }
 
 pub fn parse_composite_data(
-    iterator: &mut Peekable<impl Iterator<Item = TokenTree> + Clone>,
+    iterator: &mut TokenIterator,
 ) -> Result<UncheckedCompositeData, ParserError> {
     let (mut inner, inner_delim) = expect!(
         iterator,
         TokenTree::Group(g),
         { matches!(g.delimiter(), Delimiter::Brace | Delimiter::Parenthesis) },
-        { (g.stream().into_iter().peekable(), g.delimiter()) }
+        { (g.stream().into(), g.delimiter()) }
     );
 
     let inner = match inner_delim {
@@ -46,7 +53,7 @@ pub fn parse_composite_data(
 
 pub trait CollectKv {
     fn new() -> Self;
-    fn add(&mut self, key: String, value: UncheckedFullTypeId);
+    fn add(&mut self, key: String, value: UncheckedFullTypeId) -> bool;
 }
 
 impl CollectKv for HashMap<String, UncheckedFullTypeId> {
@@ -54,8 +61,8 @@ impl CollectKv for HashMap<String, UncheckedFullTypeId> {
         HashMap::new()
     }
 
-    fn add(&mut self, key: String, value: UncheckedFullTypeId) {
-        self.insert(key, value);
+    fn add(&mut self, key: String, value: UncheckedFullTypeId) -> bool {
+        self.insert(key, value).is_some()
     }
 }
 
@@ -64,7 +71,8 @@ impl CollectKv for Vec<(String, UncheckedFullTypeId)> {
         vec![]
     }
 
-    fn add(&mut self, key: String, value: UncheckedFullTypeId) {
+    fn add(&mut self, key: String, value: UncheckedFullTypeId) -> bool {
         self.push((key, value));
+        self.iter().dedup_with_count().any(|(count, _)| count > 1)
     }
 }

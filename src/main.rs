@@ -9,7 +9,6 @@ struct S {
 struct N(K);
 
 fn f<L: K>(a: K, b:L) -> Z {}
-fn f<L: K>(a: K, b:L) -> Z;
 
 enum E {
 	A(K),
@@ -25,6 +24,16 @@ enum G<L: K> {
 		b: L,
 	},
 	D,
+}
+
+trait T<K>: B {
+	type L: K = SomeDefaultType;
+	const C: Self::L = SomeDefaultValue;
+	type D: K;
+	const E: Self::D;
+
+	fn f<L: K>(a: K, b:L) -> Z {}
+	fn d<L: K>(a: K, b:L) -> Z;
 }
 ";
 

@@ -1,54 +1,32 @@
 use crate::prelude::*;
 
-pub struct Split<'a, T, I, P>
-where
-    I: Iterator<Item = T>,
-    P: Fn(&T) -> bool,
-{
-    iter: &'a mut Peekable<I>,
-    predicate: P,
+pub struct Split<'a> {
+    iter: &'a mut TokenIterator,
+    pat: String,
 }
 
-pub trait IntoSplit<It>
-where
-    It: Iterator,
-{
-    fn split<'a, P>(&'a mut self, predicate: P) -> Split<'a, It::Item, It, P>
-    where
-        P: Fn(&It::Item) -> bool;
+pub trait IntoSplit {
+    fn split<'a>(&'a mut self, split: impl Into<String>) -> Split<'a>;
 }
 
-impl<'a, T, I, P> Iterator for Split<'a, T, I, P>
-where
-    I: Iterator<Item = T>,
-    P: Fn(&T) -> bool,
-{
-    type Item = Peekable<<Vec<T> as IntoIterator>::IntoIter>;
+impl<'a> Iterator for Split<'a> {
+    type Item = Vec<TokenTree>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next_if(|a| (self.predicate)(a));
+        self.iter.matches(&self.pat);
 
-        if self.iter.peek().is_none() {
-            return None;
+        match self.iter.collect_while(|n| n.to_string() != self.pat) {
+            v if v.len() == 0 => None,
+            v => Some(v),
         }
-
-        // if the self.iter is not empty, then an empty collect_while indicates two consecutive
-        // elements that satisfy the predicate
-        Some(self.iter.collect_while(|a| !(self.predicate)(a)))
     }
 }
 
-impl<It> IntoSplit<It> for Peekable<It>
-where
-    It: Iterator,
-{
-    fn split<'a, P>(&'a mut self, predicate: P) -> Split<'a, It::Item, It, P>
-    where
-        P: Fn(&It::Item) -> bool,
-    {
+impl IntoSplit for TokenIterator {
+    fn split<'a>(&'a mut self, split: impl Into<String>) -> Split<'a> {
         Split {
             iter: self,
-            predicate,
+            pat: split.into(),
         }
     }
 }
