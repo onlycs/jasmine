@@ -8,10 +8,10 @@ use crate::prelude::*;
 #[test]
 fn aliases() {
     const INPUT: &'static str = r#"
-		type Alias = Actual;
-		type AliasToTuple = (Alias, Alias);
-		type AliasToGeneric = G<Alias>;
-	"#;
+        type Alias = Actual;
+        type AliasToTuple = (Alias, Alias);
+        type AliasToGeneric = G<Alias>;
+    "#;
 
     let parsed_ast = parse(INPUT).unwrap();
     let manual_ast = UncheckedProgram {
@@ -50,20 +50,20 @@ fn aliases() {
 #[test]
 fn structs() {
     const INPUT: &'static str = r#"
-		struct Normal {
-			field: TypeOne,
-			field2: TypeTwo,
-		}
+        struct Normal {
+            field: TypeOne,
+            field2: TypeTwo,
+        }
 
-		struct Tuple(TypeOne, TypeTwo);
+        struct Tuple(TypeOne, TypeTwo);
 
-		struct NormalG<T: Constraint1 + Constraint2> {
-			field: T,
-			field2: TypeTwo,
-		}
+        struct NormalG<T: Constraint1 + Constraint2> {
+            field: T,
+            field2: TypeTwo,
+        }
 
-		struct TupleG<T>(T, TypeTwo);
-	"#;
+        struct TupleG<T>(T, TypeTwo);
+    "#;
 
     let parsed_ast = parse(INPUT).unwrap();
     let manual_ast = UncheckedProgram {
@@ -142,24 +142,24 @@ fn structs() {
 #[test]
 fn enums() {
     const INPUT: &'static str = r#"
-		enum Normal {
-			Unit,
-			Tuple(TypeOne, TypeTwo),
-			Struct {
-				field: TypeOne,
-				field2: TypeTwo,
-			},
-		}
+        enum Normal {
+            Unit,
+            Tuple(TypeOne, TypeTwo),
+            Struct {
+                field: TypeOne,
+                field2: TypeTwo,
+            },
+        }
 
-		enum NormalG<T: Constraint1 + Constraint2> {
-			Unit,
-			Tuple(T, TypeTwo),
-			Struct {
-				field: T,
-				field2: TypeTwo,
-			},
-		}
-	"#;
+        enum NormalG<T: Constraint1 + Constraint2> {
+            Unit,
+            Tuple(T, TypeTwo),
+            Struct {
+                field: T,
+                field2: TypeTwo,
+            },
+        }
+    "#;
 
     let parsed_ast = parse(INPUT).unwrap();
     let manual_ast = UncheckedProgram {
@@ -223,21 +223,21 @@ fn enums() {
 #[test]
 fn traits() {
     const INPUT: &'static str = r#"
-		trait TraitA {
-			type AssocType;
-			const AssocConst: Self::AssocType;
-			fn abstract_method(&self) -> Type;
-			fn method(&self) -> Type {}
-		}
+        trait TraitA {
+            type AssocType;
+            const AssocConst: Self::AssocType;
+            fn abstract_method(&self) -> Type;
+            fn method(&self) -> Type {}
+        }
 
-		trait TraitG<T: Constraint1 + Constraint2>: Constraint3 {
-			type AssocType = DefaultType;
-			type AssocType2: Constraint4 + Constraint5 = T;
-			const AssocConst: Self::AssocType;
-			fn abstract_method(&self) -> Type;
-			fn method(&self) -> T {}
-		}
-	"#;
+        trait TraitG<T: Constraint1 + Constraint2>: Constraint3 {
+            type AssocType = DefaultType;
+            type AssocType2: Constraint4 + Constraint5 = T;
+            const AssocConst: Self::AssocType;
+            fn abstract_method(&self) -> Type;
+            fn method(&self) -> T {}
+        }
+    "#;
 
     let parsed_ast = parse(INPUT).unwrap();
     let manual_ast = UncheckedProgram {

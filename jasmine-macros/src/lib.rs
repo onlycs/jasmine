@@ -12,8 +12,8 @@ macro_rules! expect {
                     bail!(SyntaxError::ExpectWithCheck {
                         item: stringify!($expected),
                         check: stringify!($check),
-						next: $tree,
-					})
+                        next: $tree,
+                    })
                 } else {
                     $ret
                 }
@@ -21,55 +21,55 @@ macro_rules! expect {
             _ => bail!(SyntaxError::ExpectWithCheck {
                 item: stringify!($expected),
                 check: stringify!($check),
-				next: $tree,
-			}),
+                next: $tree,
+            }),
         }
     };
 
-	(on $tree:expr, $expected:pat, ret $ret:block) => {
-		expect!(on $tree, $expected, { true }, $ret)
-	};
+    (on $tree:expr, $expected:pat, ret $ret:block) => {
+        expect!(on $tree, $expected, { true }, $ret)
+    };
 
-	(on $tree:expr, $expected:pat, chk $check:block) => {
-		expect!(on $tree, $expected, $check, {})
-	};
+    (on $tree:expr, $expected:pat, chk $check:block) => {
+        expect!(on $tree, $expected, $check, {})
+    };
 
-	(on $tree:expr, $expected:pat) => {
-		expect!(on $tree, $expected, { true }, {})
-	};
+    (on $tree:expr, $expected:pat) => {
+        expect!(on $tree, $expected, { true }, {})
+    };
 
     ($tree:expr, $expected:pat, $check:block, $ret:block) => {
-		#[allow(unused)]
-		match $tree.next() {
-			Some($expected) => {
-				if !$check {
-					panic!()
-				} else {
-					$ret
-				}
-			}
-			Some(other) => {
-				panic!()
-			}
-			_ => panic!(),
-		}
-	};
+        #[allow(unused)]
+        match $tree.next() {
+            Some($expected) => {
+                if !$check {
+                    panic!()
+                } else {
+                    $ret
+                }
+            }
+            Some(other) => {
+                panic!()
+            }
+            _ => panic!(),
+        }
+    };
 
-	($tree:expr, $expected:pat, ret $ret:block) => {
-		expect!($tree, $expected, { true }, $ret)
-	};
+    ($tree:expr, $expected:pat, ret $ret:block) => {
+        expect!($tree, $expected, { true }, $ret)
+    };
 
-	($tree:expr, $expected:pat, chk $check:block) => {
-		expect!($tree, $expected, $check, {})
-	};
+    ($tree:expr, $expected:pat, chk $check:block) => {
+        expect!($tree, $expected, $check, {})
+    };
 
-	($tree:expr, $expected:pat) => {
-		expect!($tree, $expected, { true }, {})
-	};
+    ($tree:expr, $expected:pat) => {
+        expect!($tree, $expected, { true }, {})
+    };
 
-	($tree:expr, comma) => {
-		expect!($tree, TokenTree::Punct(p), chk { p.as_char() == ',' })
-	}
+    ($tree:expr, comma) => {
+        expect!($tree, TokenTree::Punct(p), chk { p.as_char() == ',' })
+    }
 }
 
 #[proc_macro]

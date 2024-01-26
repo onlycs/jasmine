@@ -20,8 +20,8 @@ macro_rules! expect_mac {
                     bail!(SyntaxError::ExpectWithCheck {
                         item: stringify!($expected),
                         check: stringify!($check),
-						next: $tree,
-					})
+                        next: $tree,
+                    })
                 } else {
                     $ret
                 }
@@ -29,98 +29,98 @@ macro_rules! expect_mac {
             _ => bail!(SyntaxError::ExpectWithCheck {
                 item: stringify!($expected),
                 check: stringify!($check),
-				next: $tree,
-			}),
+                next: $tree,
+            }),
         }
     };
 
-	(on $tree:expr, $expected:pat, ret $ret:block) => {
-		expect!(on $tree, $expected, { true }, $ret)
-	};
+    (on $tree:expr, $expected:pat, ret $ret:block) => {
+        expect!(on $tree, $expected, { true }, $ret)
+    };
 
-	(on $tree:expr, $expected:pat, chk $check:block) => {
-		expect!(on $tree, $expected, $check, {})
-	};
+    (on $tree:expr, $expected:pat, chk $check:block) => {
+        expect!(on $tree, $expected, $check, {})
+    };
 
-	(on $tree:expr, $expected:pat) => {
-		expect!(on $tree, $expected, { true }, {})
-	};
+    (on $tree:expr, $expected:pat) => {
+        expect!(on $tree, $expected, { true }, {})
+    };
 
     ($tree:expr, $expected:pat, $check:block, $ret:block) => {
-		#[allow(unused)]
-		match $tree.peek() {
-			Some($expected) => {
-				if !$check {
-					bail!(SyntaxError::ExpectWithCheck {
-						item: stringify!($expected),
-						check: stringify!($check),
-						next: $tree.peek().unwrap().clone(),
-					})
-				} else {
-					let Some($expected) = $tree.next() else { panic!() };
-					$ret
-				}
-			}
-			Some(other) => {
-				bail!(SyntaxError::ExpectWithCheck {
-					item: stringify!($expected),
-					check: stringify!($check),
-					next: $tree.peek().unwrap().clone(),
-				})
-			}
-			_ => bail!(SyntaxError::UnexpectedEOF),
-		}
-	};
+        #[allow(unused)]
+        match $tree.peek() {
+            Some($expected) => {
+                if !$check {
+                    bail!(SyntaxError::ExpectWithCheck {
+                        item: stringify!($expected),
+                        check: stringify!($check),
+                        next: $tree.peek().unwrap().clone(),
+                    })
+                } else {
+                    let Some($expected) = $tree.next() else { panic!() };
+                    $ret
+                }
+            }
+            Some(other) => {
+                bail!(SyntaxError::ExpectWithCheck {
+                    item: stringify!($expected),
+                    check: stringify!($check),
+                    next: $tree.peek().unwrap().clone(),
+                })
+            }
+            _ => bail!(SyntaxError::UnexpectedEOF),
+        }
+    };
 
-	($tree:expr, $expected:pat, ret $ret:block) => {
-		expect!($tree, $expected, { true }, $ret)
-	};
+    ($tree:expr, $expected:pat, ret $ret:block) => {
+        expect!($tree, $expected, { true }, $ret)
+    };
 
-	($tree:expr, $expected:pat, chk $check:block) => {
-		expect!($tree, $expected, $check, {})
-	};
+    ($tree:expr, $expected:pat, chk $check:block) => {
+        expect!($tree, $expected, $check, {})
+    };
 
-	($tree:expr, $expected:pat) => {
-		expect!($tree, $expected, { true }, {})
-	};
+    ($tree:expr, $expected:pat) => {
+        expect!($tree, $expected, { true }, {})
+    };
 }
 
 #[allow(unused_macros)]
 macro_rules! hashmap {
-	() => {
-		{
-			use std::collections::HashMap;
-			HashMap::new()
-		}
-	};
+    () => {
+        {
+            use std::collections::HashMap;
+            HashMap::new()
+        }
+    };
 
-	($($a:expr => $b:expr),+ $(,)?) => {
-		{
-			use std::collections::HashMap;
-			let mut map = HashMap::new();
-			$(map.insert($a, $b);)+
-			map
-		}
-	};
+    ($($a:expr => $b:expr),+ $(,)?) => {
+        {
+            use std::collections::HashMap;
+            let mut map = HashMap::new();
+            $(map.insert($a, $b);)+
+            map
+        }
+    };
 }
 
 #[allow(unused_macros)]
 macro_rules! hashset {
-	() => {
-		{
-			use std::collections::HashSet;
-			HashSet::new()
-		}
-	};
+    () => {
+        {
+            use std::collections::HashSet;
+            HashSet::new()
+        }
+    };
 
-	($($a:expr),+ $(,)?) => {
-		{
-			use std::collections::HashSet;
-			let mut set = HashSet::new();
-			$(set.insert($a);)+
-			set
-		}
-	};
+    ($($a:expr),+ $(,)?) => {
+        {
+            use std::collections::HashSet;
+            let mut set = HashSet::new();
+            $(set.insert($a);)+
+            set
+        }
+    };
 }
 
 pub(crate) use bail;
