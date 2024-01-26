@@ -128,8 +128,8 @@ impl TokenIterator {
         self.decache(count - 1, collect);
     }
 
-    pub fn matches(&mut self, front: impl Into<String>) -> bool {
-        let mut front_owned: String = front.into();
+    pub fn matches<S: Into<String>>(&mut self, front: S) -> bool {
+        let mut front_owned = <S as Into<String>>::into(front).replace(" ", "");
         let mut front = front_owned.as_mut_str();
         let mut items_consumed = 0;
 

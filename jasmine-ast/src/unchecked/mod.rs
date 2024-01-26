@@ -68,6 +68,19 @@ impl UncheckedFunction {
     }
 }
 
+impl Default for UncheckedFunction {
+    fn default() -> Self {
+        Self {
+            ident: Arc::new(String::new()),
+            generics: vec![],
+            params: vec![],
+            returns: None,
+            self_as: FunctionSelf::None,
+            body: UncheckedBodyData::Abstract,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum UncheckedCompositeData {
     Struct(HashMap<String, UncheckedFullTypeId>),

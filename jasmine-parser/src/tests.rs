@@ -354,8 +354,90 @@ fn traits() {
         },
     };
 
-    println!("parsed: {:#?}", parsed_ast);
-    println!("manual: {:#?}", manual_ast);
+    assert_eq!(parsed_ast, manual_ast);
+}
+
+#[test]
+fn functions() {
+    const INPUT: &'static str = r#"
+		fn a() {}
+		fn b(arg: A) {}
+		fn c(&self, arg: A) {}
+		fn d(&mut self) {}
+		fn e(arg: A) -> B {}
+		fn f<T>(arg: T) {}
+	"#;
+
+    let parsed_ast = parse(INPUT).unwrap();
+    let manual_ast = UncheckedProgram {
+        functions: {
+            let a = Arc::new(String::from("a"));
+            let b = Arc::new(String::from("b"));
+            let c = Arc::new(String::from("c"));
+            let d = Arc::new(String::from("d"));
+            let e = Arc::new(String::from("e"));
+            let f = Arc::new(String::from("f"));
+
+            hashmap! {
+                Arc::clone(&a) => UncheckedFunction {
+                    ident: Arc::clone(&a),
+                    body: UncheckedBodyData::WithBody(Group::new(Delimiter::Bracket, TokenStream::new())),
+                    ..Default::default()
+                },
+                Arc::clone(&b) => UncheckedFunction {
+                    ident: Arc::clone(&b),
+                    params: vec![(
+                        String::from("arg"),
+                        UncheckedFullTypeId::Simple(String::from("A")),
+                    )],
+                    body: UncheckedBodyData::WithBody(Group::new(Delimiter::Bracket, TokenStream::new())),
+                    ..Default::default()
+                },
+                Arc::clone(&c) => UncheckedFunction {
+                    ident: Arc::clone(&c),
+                    params: vec![
+                        (
+                            String::from("arg"),
+                            UncheckedFullTypeId::Simple(String::from("A")),
+                        ),
+                    ],
+                    self_as: FunctionSelf::Ref,
+                    body: UncheckedBodyData::WithBody(Group::new(Delimiter::Bracket, TokenStream::new())),
+                    ..Default::default()
+                },
+                Arc::clone(&d) => UncheckedFunction {
+                    ident: Arc::clone(&d),
+                    self_as: FunctionSelf::RefMut,
+                    body: UncheckedBodyData::WithBody(Group::new(Delimiter::Bracket, TokenStream::new())),
+                    ..Default::default()
+                },
+                Arc::clone(&e) => UncheckedFunction {
+                    ident: Arc::clone(&e),
+                    params: vec![(
+                        String::from("arg"),
+                        UncheckedFullTypeId::Simple(String::from("A")),
+                    )],
+                    returns: Some(UncheckedFullTypeId::Simple(String::from("B"))),
+                    body: UncheckedBodyData::WithBody(Group::new(Delimiter::Bracket, TokenStream::new())),
+                    ..Default::default()
+                },
+                Arc::clone(&f) => UncheckedFunction {
+                    ident: Arc::clone(&f),
+                    params: vec![(
+                        String::from("arg"),
+                        UncheckedFullTypeId::Simple(String::from("T")),
+                    )],
+                    generics: vec![UncheckedGeneric {
+                        ident: String::from("T"),
+                        constraints: hashset![],
+                    }],
+                    body: UncheckedBodyData::WithBody(Group::new(Delimiter::Bracket, TokenStream::new())),
+                    ..Default::default()
+                },
+            }
+        },
+        types: hashmap! {},
+    };
 
     assert_eq!(parsed_ast, manual_ast);
 }
