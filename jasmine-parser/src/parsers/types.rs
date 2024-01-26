@@ -39,12 +39,12 @@ pub fn parse_full(iterator: &mut TokenIterator) -> Result<UncheckedFullTypeId, P
         });
     }
 
-    let inner = vec![];
+    let mut inner = vec![];
 
     if iterator.matches("<") {
-        iterator.permit_if(|p| !matches!(p, TokenTree::Punct(p) if p.as_char() == '>'));
+        iterator.block_when(|p| matches!(p, TokenTree::Punct(p) if p.as_char() == '>'));
 
-        iterator
+        inner = iterator
             .split(',')
             .map(|iter| parse_full(&mut iter.into()))
             .check()?

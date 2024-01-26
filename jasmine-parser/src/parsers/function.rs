@@ -5,8 +5,6 @@ pub fn parse(iterator: &mut TokenIterator) -> Result<UncheckedFunction, ParserEr
     let fn_name = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
     let generics = generics::parse(iterator).unwrap_or(vec![]);
 
-    println!("{:?}", iterator.peek());
-
     let mut args: TokenIterator = expect!(
         iterator,
         TokenTree::Group(g),
@@ -14,20 +12,17 @@ pub fn parse(iterator: &mut TokenIterator) -> Result<UncheckedFunction, ParserEr
         { g.stream().into() }
     );
 
-    let self_as = match args.peek() {
-        Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::Consume,
-        Some(TokenTree::Punct(p)) if p.as_char() == '&' => match args.nth(1) {
-            Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::Ref,
-            Some(TokenTree::Ident(i)) if i == "mut" => match args.next() {
-                Some(TokenTree::Ident(i)) if i == "self" => FunctionSelf::RefMut,
-                Some(bad) => bail!(SyntaxError::UnexpectedToken(bad)),
-                None => bail!(SyntaxError::UnexpectedEOF),
-            },
-            Some(bad) => bail!(SyntaxError::UnexpectedToken(bad)),
-            None => bail!(SyntaxError::UnexpectedEOF),
-        },
-        _ => FunctionSelf::None,
-    };
+    let self_as;
+
+    if args.matches("self") {
+        self_as = FunctionSelf::Consume;
+    } else if args.matches("&self") {
+        self_as = FunctionSelf::Ref;
+    } else if args.matches("&mut self") {
+        self_as = FunctionSelf::RefMut;
+    } else {
+        self_as = FunctionSelf::None;
+    }
 
     if self_as != FunctionSelf::None && args.peek().is_some() {
         expect!(args, TokenTree::Punct(p), chk { p.as_char() == ',' });

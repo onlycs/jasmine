@@ -1,10 +1,3 @@
-[package]
-name = "jasmine"
-version = "0.1.0"
-
 [workspace]
+members = ["jasmine-parser", "jasmine-ast", "jasmine-macros"]
 resolver = "2"
-members = ["parser", ".", "libjasmine"]
-
-[dependencies]
-parser = { path = "parser" }

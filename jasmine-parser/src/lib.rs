@@ -15,6 +15,9 @@ mod iter;
 mod parsers;
 mod prelude;
 
+#[cfg(test)]
+mod tests;
+
 pub mod errors;
 
 pub fn parse(input: &str) -> Result<UncheckedProgram, FullParserError> {

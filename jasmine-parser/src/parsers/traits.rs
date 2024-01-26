@@ -3,7 +3,7 @@ use crate::prelude::*;
 
 fn parse_assoc_type(
     iterator: &mut TokenIterator,
-) -> Result<(String, UncheckedAssicatedType), ParserError> {
+) -> Result<(String, UncheckedAssociatedType), ParserError> {
     let ident = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
 
     let constraints = generics::parse_constraints(iterator.permitting(|t| {
@@ -33,7 +33,7 @@ fn parse_assoc_type(
 
     Ok((
         ident,
-        UncheckedAssicatedType {
+        UncheckedAssociatedType {
             constraints,
             default,
         },
@@ -42,7 +42,7 @@ fn parse_assoc_type(
 
 fn parse_assoc_const(
     iterator: &mut TokenIterator,
-) -> Result<(String, UncheckedAssicatedConst), ParserError> {
+) -> Result<(String, UncheckedAssociatedConst), ParserError> {
     let ident = expect!(iterator, TokenTree::Ident(i), ret { i.to_string() });
 
     expect!(iterator, TokenTree::Punct(p), chk { p.as_char() == ':' });
@@ -59,7 +59,7 @@ fn parse_assoc_const(
 
     Ok((
         ident,
-        UncheckedAssicatedConst {
+        UncheckedAssociatedConst {
             ty,
             default: default.map(Vec::into_iter).map(Iterator::collect),
         },
@@ -70,7 +70,7 @@ pub fn parse(iterator: &mut TokenIterator) -> Result<UncheckedType, ParserError>
     let type_name = expect!(iterator, TokenTree::Ident(ident), ret { ident.to_string() });
     let generics = generics::parse(iterator).unwrap_or(vec![]);
 
-    iterator.permit_if(|t| !matches!(t, TokenTree::Group(_)));
+    iterator.block_when(|t| matches!(t, TokenTree::Group(_)));
     let constraints = generics::parse_constraints(iterator).unwrap_or_default();
     iterator.remove_first_limit();
 

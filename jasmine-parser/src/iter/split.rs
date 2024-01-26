@@ -13,7 +13,7 @@ impl<'a> Iterator for Split<'a> {
     type Item = Vec<TokenTree>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.matches(&self.pat);
+        self.iter.collect_while(|n| n.to_string() == self.pat);
 
         match self.iter.collect_while(|n| n.to_string() != self.pat) {
             v if v.len() == 0 => None,

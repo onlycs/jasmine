@@ -5,5 +5,4 @@ heavy lifting
 
 ## Usage
 
-`src/main.rs` has a const string that contains some test code.
-AST is pretty printed.
+`cargo test` does tests. `assert_eq`'ed with manually constructed ASTs.

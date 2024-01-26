@@ -3,8 +3,6 @@ use crate::prelude::*;
 
 pub fn parse(iterator: &mut TokenIterator) -> Result<UncheckedType, ParserError> {
     let type_name = expect!(iterator, TokenTree::Ident(ident), ret { ident.to_string() });
-
-    println!("{}", type_name);
     let generics = generics::parse(iterator).unwrap_or(vec![]);
     let inner = common::parse_composite_data(iterator)?;
 

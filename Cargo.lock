@@ -35,10 +35,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "jasmine"
+name = "jasmine-ast"
 version = "0.1.0"
 dependencies = [
- "parser",
+ "proc-macro2",
+ "rand",
+]
+
+[[package]]
+name = "jasmine-macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "jasmine-parser"
+version = "0.1.0"
+dependencies = [
+ "itertools",
+ "jasmine-ast",
+ "jasmine-macros",
+ "proc-macro2",
+ "quote",
+ "syn",
+ "thiserror",
 ]
 
 [[package]]
@@ -48,26 +71,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13e3bf6590cbc649f4d1a3eefc9d5d6eb746f5200ffb04e5e142700b8faa56e7"
 
 [[package]]
-name = "libjasmine"
-version = "0.1.0"
-dependencies = [
- "proc-macro2",
- "rand",
-]
-
-[[package]]
-name = "parser"
-version = "0.1.0"
-dependencies = [
- "itertools",
- "libjasmine",
- "proc-macro2",
- "quote",
- "syn",
- "thiserror",
-]
-
-[[package]]
 name = "ppv-lite86"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -75,9 +78,9 @@ checksum = "5b40af805b3121feab8a3c29f04d8ad262fa8e0561883e7653e024ae4479e6de"
 
 [[package]]
 name = "proc-macro2"
-version = "1.0.76"
+version = "1.0.78"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "95fc56cda0b5c3325f5fbbd7ff9fda9e02bb00bb3dac51252d2f1bfa1cb8cc8c"
+checksum = "e2422ad645d89c99f8f3e6b88a9fdeca7fabeac836b1002371c4367c8f984aae"
 dependencies = [
  "unicode-ident",
 ]

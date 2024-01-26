@@ -1,6 +1,7 @@
 pub use crate::{errors::*, iter::*};
 pub use itertools::*;
-pub use libjasmine::prelude::*;
+pub use jasmine_ast::prelude::*;
+pub use jasmine_macros::proc_expect;
 pub use proc_macro2::{Delimiter, TokenStream, TokenTree};
 pub use std::collections::{HashMap, HashSet};
 pub use std::sync::Arc;
@@ -84,5 +85,49 @@ macro_rules! expect_mac {
 	};
 }
 
+#[allow(unused_macros)]
+macro_rules! hashmap {
+	() => {
+		{
+			use std::collections::HashMap;
+			HashMap::new()
+		}
+	};
+
+	($($a:expr => $b:expr),+ $(,)?) => {
+		{
+			use std::collections::HashMap;
+			let mut map = HashMap::new();
+			$(map.insert($a, $b);)+
+			map
+		}
+	};
+}
+
+#[allow(unused_macros)]
+macro_rules! hashset {
+	() => {
+		{
+			use std::collections::HashSet;
+			HashSet::new()
+		}
+	};
+
+	($($a:expr),+ $(,)?) => {
+		{
+			use std::collections::HashSet;
+			let mut set = HashSet::new();
+			$(set.insert($a);)+
+			set
+		}
+	};
+}
+
 pub(crate) use bail;
 pub(crate) use expect_mac as expect;
+
+#[allow(unused_imports)]
+pub(crate) use hashmap;
+
+#[allow(unused_imports)]
+pub(crate) use hashset;

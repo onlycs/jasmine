@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use crate::prelude::FunctionSelf;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedGeneric {
     pub ident: String,
     pub constraints: HashSet<UncheckedFullTypeId>,
@@ -42,7 +42,17 @@ pub enum UncheckedBodyData {
     WithBody(Group), // TokenTree::Group { delim: brace }
 }
 
-#[derive(Clone, Debug)]
+impl PartialEq for UncheckedBodyData {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Abstract, Self::Abstract) => true,
+            (Self::WithBody(_), Self::WithBody(_)) => true,
+            _ => false,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedFunction {
     pub ident: Arc<String>,
     pub generics: Vec<UncheckedGeneric>,
@@ -58,13 +68,13 @@ impl UncheckedFunction {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum UncheckedCompositeData {
     Struct(HashMap<String, UncheckedFullTypeId>),
     Tuple(Vec<UncheckedFullTypeId>),
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedStruct {
     pub inner: UncheckedCompositeData,
     pub generics: Vec<UncheckedGeneric>,
@@ -72,7 +82,7 @@ pub struct UncheckedStruct {
     pub traits: Vec<UncheckedFullTypeId>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedEnum {
     pub variants: HashMap<String, Option<UncheckedCompositeData>>,
     pub generics: Vec<UncheckedGeneric>,
@@ -80,28 +90,34 @@ pub struct UncheckedEnum {
     pub traits: Vec<UncheckedFullTypeId>,
 }
 
-#[derive(Clone, Debug)]
-pub struct UncheckedAssicatedType {
+#[derive(Clone, Debug, PartialEq)]
+pub struct UncheckedAssociatedType {
     pub constraints: HashSet<UncheckedFullTypeId>,
     pub default: Option<UncheckedFullTypeId>,
 }
 
 #[derive(Clone, Debug)]
-pub struct UncheckedAssicatedConst {
+pub struct UncheckedAssociatedConst {
     pub ty: UncheckedFullTypeId,
     pub default: Option<TokenStream>, /* storing expr */
 }
 
-#[derive(Clone, Debug)]
+impl PartialEq for UncheckedAssociatedConst {
+    fn eq(&self, other: &Self) -> bool {
+        self.ty == other.ty && self.default.is_some() == other.default.is_some()
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedTrait {
     pub generics: Vec<UncheckedGeneric>,
     pub methods: HashMap<Arc<String>, UncheckedFunction>,
     pub constraints: HashSet<UncheckedFullTypeId>,
-    pub associated_types: HashMap<String, UncheckedAssicatedType>,
-    pub consts: HashMap<String, UncheckedAssicatedConst>,
+    pub associated_types: HashMap<String, UncheckedAssociatedType>,
+    pub consts: HashMap<String, UncheckedAssociatedConst>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum UncheckedTypeKind {
     Struct(UncheckedStruct),
     Enum(UncheckedEnum),
@@ -111,7 +127,7 @@ pub enum UncheckedTypeKind {
     JavaBuiltin,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedType {
     pub ident: Arc<String>,
     pub kind: UncheckedTypeKind,
@@ -123,7 +139,7 @@ impl UncheckedType {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct UncheckedProgram {
     pub functions: HashMap<Arc<String>, UncheckedFunction>,
     pub types: HashMap<Arc<String>, UncheckedType>,

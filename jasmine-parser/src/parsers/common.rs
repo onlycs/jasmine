@@ -1,6 +1,7 @@
 use super::*;
 use crate::prelude::*;
 
+#[allow(unused_variables)]
 pub fn parse_kv<Collector: CollectKv>(
     iterator: &mut TokenIterator,
 ) -> Result<Collector, ParserError> {
@@ -8,10 +9,9 @@ pub fn parse_kv<Collector: CollectKv>(
         .split(',')
         .map(Vec::<TokenTree>::into)
         .map(|mut iter: TokenIterator| {
-            let ident = expect!(iter, TokenTree::Ident(i), ret { i.to_string() });
-            expect!(iter, TokenTree::Punct(punct), ret { punct.as_char() == ':' });
-            let value = types::parse_full(&mut iter)?;
-            Result::<_, ParserError>::Ok((ident, value))
+            proc_expect!(iter, "{ident:0}:{value}");
+
+            Result::<_, ParserError>::Ok((ident.to_string(), types::parse_full(&mut value)?))
         })
         .check()?
         .fold(
