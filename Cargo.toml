@@ -1,3 +1,3 @@
 [workspace]
-members = ["jasmine-parser", "jasmine-ast", "jasmine-macros"]
+members = ["jasmine-typecheck"]
 resolver = "2"
