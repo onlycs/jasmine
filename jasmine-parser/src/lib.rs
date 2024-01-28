@@ -5,11 +5,13 @@ extern crate syn;
 mod error;
 mod mod_resolve;
 mod prelude;
+#[cfg(test)]
+mod tests;
 
 use prelude::*;
 use syn::parse_file;
 
-pub fn parse(file_path: &mut PathBuf) -> Result<File, ParserError> {
+pub(crate) fn _parse(file_path: &mut PathBuf) -> Result<File, ParserError> {
     trace!("Attempting to read file to string: {}", file_path.display());
     let content = read_file(&file_path)?;
 
@@ -20,4 +22,8 @@ pub fn parse(file_path: &mut PathBuf) -> Result<File, ParserError> {
     mod_resolve::resolve(file_path, &mut file)?;
 
     Ok(file)
+}
+
+pub fn parse(mut file_path: PathBuf) -> Result<File, ParserError> {
+    _parse(&mut file_path)
 }

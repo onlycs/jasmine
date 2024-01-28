@@ -23,17 +23,22 @@ pub fn resolve(path: &mut PathBuf, ast: &mut File) -> Result<(), ParserError> {
         }
 
         trace!("Found module file: {}", path.display());
-        let parsed = crate::parse(path)?;
+        let mut parsed = crate::_parse(path)?;
 
         if parsed.shebang.is_some() {
             bail!(ParserError::UnexpectedShebang);
         }
 
-        if !parsed.attrs.is_empty() {
-            bail!(ParserError::UnexpectedInnerAttribute);
-        }
+        parsed
+            .attrs
+            .iter_mut()
+            .for_each(|attr| attr.style = syn::AttrStyle::Outer);
 
         item.content = Some((Default::default(), parsed.items));
+        item.semi = None;
+        item.attrs = parsed.attrs;
+
+        path.pop();
     }
 
     Ok(())

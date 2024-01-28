@@ -1,0 +1,6 @@
+{
+	"files.associations": {
+		"*.jasmine": "rust",
+	},
+	"rust-analyzer.showUnlinkedFileNotification": false
+}

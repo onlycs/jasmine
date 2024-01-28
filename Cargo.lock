@@ -41,6 +41,7 @@ name = "jasmine-parser"
 version = "0.1.0"
 dependencies = [
  "log",
+ "simple_logger",
  "syn",
  "thiserror",
 ]

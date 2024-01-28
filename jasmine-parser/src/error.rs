@@ -22,7 +22,4 @@ pub enum ParserError {
 
     #[error("Can only use shebang in the crate-level module")]
     UnexpectedShebang,
-
-    #[error("Can only use inner attributes (#![..]) in the crate-level module")]
-    UnexpectedInnerAttribute,
 }
