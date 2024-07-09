@@ -1,7 +1,6 @@
 # The Jasmine Programming Language
 
-My computer science class forces me to use the absolutely horrid Java programming language. Because of this,
-I decided to make my own programming language that compiles to Java source code. I called it Jasmine
+I don't like java. The problem arises when my AP CS course forces me to use it. In retaliation, I created this -- a buggy Rust to Java transpiler.
 
 ## Features
 
@@ -18,9 +17,22 @@ I decided to make my own programming language that compiles to Java source code.
 - [x] Math
 - [x] If-let statements (for enums only)
 - [x] Match statements (for enums only)
-- [x] Nice builtins
+- [x] Builtins
 - [] Type casting (not planned)
-- [x] Idk what else should be here, but probably, yes!
+- [x] Arrays (kinda)
+
+## So what's changed from Rust
+- Macros are just functions
+- No modules
+- No use statements (`java.util.*` is imported by default)
+- Arrays are different
+- Character literals only sometimes work
+- Can only use literal for rhs of range
+- No traits, type casting
+- No type inferencing (must declare types)
+- Closures use custom types in Java
+- Removed rust std and core
+- A whole lot more
 
 ## Usage
 ```
@@ -38,7 +50,6 @@ Options:
 ```
 
 ## Examples
-Note: Untested
 
 
 ### Hello World
