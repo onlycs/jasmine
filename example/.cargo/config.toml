@@ -1,0 +1,5 @@
+[build]
+rustc-workspace-wrapper = "/home/angad/code/jasmine/target/debug/jasmine-driver"
+
+[alias]
+jbuild = "check"

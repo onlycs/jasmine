@@ -1,4 +1,0 @@
-mod some_dir_mod;
-mod some_mod;
-
-fn test() {}

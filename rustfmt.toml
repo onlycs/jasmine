@@ -1,0 +1,17 @@
+reorder_imports = true
+reorder_modules = true
+group_imports = "StdExternalCrate"
+condense_wildcard_suffixes = true
+edition = "2024"
+format_code_in_doc_comments = true
+format_generated_files = false
+format_macro_matchers = true
+hex_literal_case = "Lower"
+imports_granularity = "Crate"
+newline_style = "Unix"
+normalize_comments = true
+normalize_doc_attributes = true
+reorder_impl_items = true
+use_field_init_shorthand = true
+use_try_shorthand = true
+wrap_comments = true
