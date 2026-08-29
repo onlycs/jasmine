@@ -54,7 +54,25 @@
       "inputs": {
         "flake-utils": "flake-utils",
         "nixpkgs": "nixpkgs",
+        "rust-analyzer-src": "rust-analyzer-src",
         "rust-overlay": "rust-overlay"
+      }
+    },
+    "rust-analyzer-src": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1787909076,
+        "narHash": "sha256-dGGOmzu3v7Sd9AZjvmPXqw2oXxepu7DDcQ0X+oW+a28=",
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "af4111f0bf85d9d66f4161b007b0081860e0a21c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "rust-lang",
+        "repo": "rust-analyzer",
+        "rev": "af4111f0bf85d9d66f4161b007b0081860e0a21c",
+        "type": "github"
       }
     },
     "rust-overlay": {
