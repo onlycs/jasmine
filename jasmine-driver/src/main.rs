@@ -19,12 +19,14 @@ enum JasmineCallbacks {
 impl Callbacks for JasmineCallbacks {
     fn after_analysis<'tcx>(
         &mut self,
-        _compiler: &Compiler,
+        compiler: &Compiler,
         tcx: TyCtxt<'tcx>,
     ) -> rustc_driver::Compilation {
         match self {
             JasmineCallbacks::Compile { jasmine_out } => {
-                jasmine_lower::run(tcx, &jasmine_out);
+                if let Err(jerror) = jasmine_lower::run(tcx, &jasmine_out) {
+                    compiler.sess.dcx().emit_err(jerror);
+                }
                 rustc_driver::Compilation::Stop
             }
             JasmineCallbacks::Metadata => rustc_driver::Compilation::Continue,
